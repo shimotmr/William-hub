@@ -198,7 +198,7 @@ export default function AgentsPage() {
                           src={`/avatars/${agent.name.toLowerCase()}.png`}
                           alt={agent.name}
                           fill
-                          className="object-cover"
+                          className="object-cover scale-[1.35]"
                         />
                       </div>
                       {/* Status dot */}
