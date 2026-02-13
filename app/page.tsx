@@ -1,121 +1,275 @@
+// ============================================================
+// William Hub — Professional Dashboard v2
+// ============================================================
+
+// --- Mock Data (replace with API later) ---
+const mockStats = {
+  tokens: { today: 42_850, week: 287_600, month: 1_124_000, total: 8_750_000 },
+  agents: [
+    { name: 'Main', status: 'ok' as const },
+    { name: 'Writer', status: 'ok' as const },
+    { name: 'Trader', status: 'idle' as const },
+    { name: 'Coder', status: 'ok' as const },
+  ],
+}
+
 const apps = [
   {
     name: 'Aurotek Portal',
     desc: '通路營業管理系統',
     url: 'https://aurotek-sales-portal.vercel.app',
-    icon: '🏢',
-    color: 'from-red-500/20 to-red-900/20',
-    border: 'border-red-500/30',
-    glow: 'hover:shadow-red-500/20',
     tag: '公司',
+    accent: '#ef4444',
+    accentBg: 'rgba(239,68,68,0.08)',
+    borderColor: 'rgba(239,68,68,0.25)',
   },
   {
     name: 'Travis Daily',
-    desc: 'AI 動態 · 研究報告 · 技術筆記',
+    desc: 'AI 動態 / 研究報告 / 技術筆記',
     url: 'https://travis-daily.vercel.app',
-    icon: '📰',
-    color: 'from-blue-500/20 to-blue-900/20',
-    border: 'border-blue-500/30',
-    glow: 'hover:shadow-blue-500/20',
     tag: '專欄',
+    accent: '#3b82f6',
+    accentBg: 'rgba(59,130,246,0.08)',
+    borderColor: 'rgba(59,130,246,0.25)',
   },
   {
     name: 'Trading System',
-    desc: '程式交易 · 策略回測 · 即時監控',
+    desc: '程式交易 / 策略回測 / 即時監控',
     url: '#',
-    icon: '📈',
-    color: 'from-emerald-500/20 to-emerald-900/20',
-    border: 'border-emerald-500/30',
-    glow: 'hover:shadow-emerald-500/20',
     tag: '開發中',
+    accent: '#10b981',
+    accentBg: 'rgba(16,185,129,0.08)',
+    borderColor: 'rgba(16,185,129,0.25)',
     disabled: true,
   },
   {
     name: 'Jarvis',
-    desc: 'AI 助理控制台',
+    desc: 'AI 多 Agent 控制台',
     url: '#',
-    icon: '🤖',
-    color: 'from-purple-500/20 to-purple-900/20',
-    border: 'border-purple-500/30',
-    glow: 'hover:shadow-purple-500/20',
     tag: '開發中',
+    accent: '#a855f7',
+    accentBg: 'rgba(168,85,247,0.08)',
+    borderColor: 'rgba(168,85,247,0.25)',
     disabled: true,
   },
 ]
 
+// --- SVG Icons (stroke-based, unified style) ---
+function IconAurotek({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="10" width="18" height="11" rx="1" />
+      <path d="M7 10V6a5 5 0 0 1 10 0v4" />
+      <line x1="3" y1="14" x2="21" y2="14" />
+      <line x1="8" y1="14" x2="8" y2="21" />
+      <line x1="16" y1="14" x2="16" y2="21" />
+      <line x1="12" y1="14" x2="12" y2="21" />
+    </svg>
+  )
+}
+
+function IconTravisDaily({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="7" y1="7" x2="17" y2="7" />
+      <line x1="7" y1="11" x2="13" y2="11" />
+      <line x1="7" y1="15" x2="11" y2="15" />
+      <line x1="14" y1="13" x2="17" y2="13" />
+      <line x1="14" y1="16" x2="17" y2="16" />
+    </svg>
+  )
+}
+
+function IconTrading({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 17 9 11 13 15 21 7" />
+      <polyline points="17 7 21 7 21 11" />
+      <line x1="3" y1="21" x2="21" y2="21" />
+      <line x1="7" y1="21" x2="7" y2="17" />
+      <line x1="11" y1="21" x2="11" y2="14" />
+      <line x1="15" y1="21" x2="15" y2="16" />
+    </svg>
+  )
+}
+
+function IconJarvis({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="4" width="14" height="12" rx="2" />
+      <circle cx="9" cy="10" r="1.5" />
+      <circle cx="15" cy="10" r="1.5" />
+      <line x1="9" y1="16" x2="9" y2="20" />
+      <line x1="15" y1="16" x2="15" y2="20" />
+      <line x1="6" y1="20" x2="18" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="1" />
+      <circle cx="12" cy="1" r="0.5" fill={color} />
+    </svg>
+  )
+}
+
+const iconMap: Record<string, React.FC<{ color: string }>> = {
+  'Aurotek Portal': IconAurotek,
+  'Travis Daily': IconTravisDaily,
+  'Trading System': IconTrading,
+  'Jarvis': IconJarvis,
+}
+
+// --- Helpers ---
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return n.toString()
+}
+
+function getDateStr(): string {
+  const d = new Date()
+  const tw = new Date(d.getTime() + 8 * 60 * 60 * 1000)
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  return `${days[tw.getUTCDay()]}, ${months[tw.getUTCMonth()]} ${tw.getUTCDate()}, ${tw.getUTCFullYear()}`
+}
+
+function StatusDot({ status }: { status: 'ok' | 'fail' | 'idle' }) {
+  const colors = { ok: '#10b981', fail: '#ef4444', idle: '#6b7280' }
+  return (
+    <span
+      className="inline-block w-2 h-2 rounded-full"
+      style={{ backgroundColor: colors[status] }}
+    />
+  )
+}
+
+// --- Arrow Icon ---
+function ArrowRight() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  )
+}
+
+// ============================================================
+// Page Component
+// ============================================================
 export default function Home() {
+  const { tokens, agents } = mockStats
+
   return (
     <main className="min-h-screen relative overflow-hidden">
-      {/* Background grid effect */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-blue-500/5 rounded-full blur-[120px]" />
+      {/* Subtle grid bg */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-blue-500/[0.04] rounded-full blur-[100px]" />
 
-      <div className="relative z-10 max-w-3xl mx-auto px-6 py-16 sm:py-24">
+      <div className="relative z-10 max-w-4xl mx-auto px-5 py-12 sm:py-20">
         {/* Header */}
-        <div className="mb-12 sm:mb-16">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-lg font-bold">
+        <header className="mb-10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white">
               W
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              William Hub
-            </h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">William Hub</h1>
           </div>
-          <p className="text-gray-500 text-sm sm:text-base">
-            個人工作站 · 所有系統的入口
-          </p>
-        </div>
+          <p className="text-gray-500 text-sm ml-12">Command Center</p>
+        </header>
 
-        {/* App Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Strategic Panel */}
+        <section className="mb-8 rounded-xl border border-gray-800/60 bg-gray-900/40 backdrop-blur-sm">
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {/* Top row: date + agents */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              <div className="text-sm text-gray-400 font-medium tracking-wide">
+                {getDateStr()}
+              </div>
+              <div className="flex items-center gap-4">
+                {agents.map((a) => (
+                  <div key={a.name} className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <StatusDot status={a.status} />
+                    <span>{a.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Token stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Today', value: tokens.today },
+                { label: 'This Week', value: tokens.week },
+                { label: 'This Month', value: tokens.month },
+                { label: 'Total', value: tokens.total },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="text-[11px] text-gray-600 uppercase tracking-wider mb-1">{item.label}</div>
+                  <div className="text-lg sm:text-xl font-semibold text-gray-200 tabular-nums">
+                    {formatNumber(item.value)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* App Cards */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {apps.map((app) => {
-            const Card = (
+            const Icon = iconMap[app.name]
+            const inner = (
               <div
-                key={app.name}
-                className={`group relative rounded-2xl border ${app.border} bg-gradient-to-br ${app.color} 
-                  p-5 sm:p-6 transition-all duration-300 
-                  ${app.disabled ? 'opacity-50 cursor-not-allowed' : `cursor-pointer hover:scale-[1.02] hover:shadow-xl ${app.glow}`}`}
+                className={`group relative rounded-xl border p-5 sm:p-6 transition-all duration-200 ${
+                  app.disabled
+                    ? 'opacity-40 cursor-not-allowed'
+                    : 'cursor-pointer hover:translate-y-[-2px] hover:shadow-lg'
+                }`}
+                style={{
+                  borderColor: app.borderColor,
+                  background: app.accentBg,
+                }}
               >
                 {/* Tag */}
-                <div className="absolute top-4 right-4">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                    app.disabled 
-                      ? 'border-gray-700 text-gray-600' 
-                      : 'border-gray-600 text-gray-400'
-                  }`}>
-                    {app.tag}
-                  </span>
-                </div>
+                <span
+                  className="absolute top-4 right-4 text-[10px] px-2 py-0.5 rounded-full border"
+                  style={{
+                    borderColor: app.disabled ? 'rgba(107,114,128,0.3)' : app.borderColor,
+                    color: app.disabled ? '#6b7280' : app.accent,
+                  }}
+                >
+                  {app.tag}
+                </span>
 
                 {/* Icon */}
-                <div className="text-3xl mb-3">{app.icon}</div>
+                <div className="mb-3">
+                  {Icon && <Icon color={app.accent} />}
+                </div>
 
-                {/* Info */}
-                <h2 className="text-lg font-semibold text-gray-100 mb-1">{app.name}</h2>
+                {/* Text */}
+                <h2 className="text-base font-semibold text-gray-100 mb-1">{app.name}</h2>
                 <p className="text-sm text-gray-500 leading-relaxed">{app.desc}</p>
 
                 {/* Arrow */}
                 {!app.disabled && (
-                  <div className="absolute bottom-5 right-5 text-gray-600 group-hover:text-gray-300 transition-colors text-lg">
-                    →
+                  <div className="absolute bottom-5 right-5 text-gray-600 group-hover:text-gray-300 transition-colors">
+                    <ArrowRight />
                   </div>
                 )}
               </div>
             )
 
-            if (app.disabled) return <div key={app.name}>{Card}</div>
+            if (app.disabled) return <div key={app.name}>{inner}</div>
             return (
               <a key={app.name} href={app.url} target="_blank" rel="noopener noreferrer">
-                {Card}
+                {inner}
               </a>
             )
           })}
-        </div>
+        </section>
 
         {/* Footer */}
-        <div className="mt-16 text-center text-gray-700 text-xs">
-          Built with ☕ and 🤖
-        </div>
+        <footer className="mt-14 text-center text-gray-700 text-xs tracking-wide">
+          William Hub v2
+        </footer>
       </div>
     </main>
   )
