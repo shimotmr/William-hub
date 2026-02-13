@@ -12,6 +12,7 @@ const mockStats = {
     { name: 'Writer', status: 'ok' as const },
     { name: 'Researcher', status: 'ok' as const },
     { name: 'Coder', status: 'ok' as const },
+    { name: 'Designer', status: 'ok' as const },
     { name: 'Trader', status: 'idle' as const },
   ],
 }
