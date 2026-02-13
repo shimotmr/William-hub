@@ -65,8 +65,8 @@ const apps = [
   {
     name: 'Travis',
     desc: 'AI 多 Agent 控制台',
-    url: '#',
-    tag: '開發中',
+    url: '/agents',
+    tag: 'LIVE',
     accent: '#a855f7',
     accentBg: 'rgba(168,85,247,0.08)',
     borderColor: 'rgba(168,85,247,0.25)',
