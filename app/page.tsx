@@ -42,7 +42,7 @@ const apps = [
     borderColor: 'rgba(16,185,129,0.25)',
   },
   {
-    name: 'Jarvis',
+    name: 'Travis',
     desc: 'AI 多 Agent 控制台',
     url: '#',
     tag: '開發中',
@@ -93,7 +93,7 @@ function IconTrading({ color }: { color: string }) {
   )
 }
 
-function IconJarvis({ color }: { color: string }) {
+function IconTravis({ color }: { color: string }) {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="5" y="4" width="14" height="12" rx="2" />
@@ -112,7 +112,7 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Aurotek Portal': IconAurotek,
   'Travis Daily': IconTravisDaily,
   'Trading System': IconTrading,
-  'Jarvis': IconJarvis,
+  'Travis': IconTravis,
 }
 
 // --- Helpers ---
