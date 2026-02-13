@@ -186,7 +186,7 @@ export default function Home() {
               <div className="text-sm text-gray-400 font-medium tracking-wide">
                 {getDateStr()}
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 {agents.map((a) => (
                   <div key={a.name} className="flex items-center gap-1.5 text-xs text-gray-500">
                     <StatusDot status={a.status} />
