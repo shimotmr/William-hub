@@ -35,12 +35,11 @@ const apps = [
   {
     name: 'Trading System',
     desc: '程式交易 / 策略回測 / 即時監控',
-    url: '#',
-    tag: '開發中',
+    url: '/trade',
+    tag: 'LIVE',
     accent: '#10b981',
     accentBg: 'rgba(16,185,129,0.08)',
     borderColor: 'rgba(16,185,129,0.25)',
-    disabled: true,
   },
   {
     name: 'Jarvis',
