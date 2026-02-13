@@ -6,7 +6,9 @@
 const mockStats = {
   tokens: { today: 42_850, week: 287_600, month: 1_124_000, total: 8_750_000 },
   agents: [
-    { name: 'Main', status: 'ok' as const },
+    { name: 'Jarvis', status: 'ok' as const },
+    { name: 'Inspector', status: 'ok' as const },
+    { name: 'Secretary', status: 'ok' as const },
     { name: 'Writer', status: 'ok' as const },
     { name: 'Trader', status: 'idle' as const },
     { name: 'Coder', status: 'ok' as const },
