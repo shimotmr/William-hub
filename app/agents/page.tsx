@@ -79,93 +79,7 @@ const workflows = [
   { name: '簽核流程', flow: ['Secretary', 'Jarvis', 'William'], desc: '偵測 → 摘要 → 人工確認', color: '#f59e0b' },
 ]
 
-// --- Isometric helpers ---
-// Convert grid (x,y) to pixel (px,py) for isometric view
-const TILE_W = 140
-const TILE_H = 70
-const OFFSET_X = 420
-const OFFSET_Y = 40
-
-function gridToIso(gx: number, gy: number): { x: number; y: number } {
-  return {
-    x: OFFSET_X + (gx - gy) * (TILE_W / 2),
-    y: OFFSET_Y + (gx + gy) * (TILE_H / 2),
-  }
-}
-
-// --- Isometric Desk SVG Component ---
-function IsoDeskSVG({ x, y, color, isOffline }: { x: number; y: number; color: string; isOffline: boolean }) {
-  const opacity = isOffline ? 0.3 : 1
-  return (
-    <g transform={`translate(${x}, ${y})`} opacity={opacity}>
-      {/* Floor tile */}
-      <polygon
-        points="0,0 70,-35 140,0 70,35"
-        fill={`${color}08`}
-        stroke={`${color}20`}
-        strokeWidth="1"
-      />
-      {/* Desk surface (isometric box top) */}
-      <g transform="translate(25, -15)">
-        <polygon points="0,0 45,-22 90,0 45,22" fill={`${color}25`} stroke={`${color}40`} strokeWidth="1" />
-        {/* Desk front */}
-        <polygon points="0,0 45,22 45,32 0,10" fill={`${color}18`} stroke={`${color}30`} strokeWidth="0.5" />
-        {/* Desk side */}
-        <polygon points="45,22 90,0 90,10 45,32" fill={`${color}12`} stroke={`${color}25`} strokeWidth="0.5" />
-      </g>
-      {/* Monitor */}
-      <g transform="translate(50, -42)">
-        <rect x="-10" y="-15" width="20" height="14" rx="1" fill={`${color}30`} stroke={`${color}50`} strokeWidth="1" />
-        <rect x="-2" y="-1" width="4" height="5" fill={`${color}20`} />
-        <line x1="-6" y1="4" x2="6" y2="4" stroke={`${color}30`} strokeWidth="1" />
-        {/* Screen glow */}
-        {!isOffline && <rect x="-8" y="-13" width="16" height="10" rx="0.5" fill={`${color}15`}>
-          <animate attributeName="opacity" values="0.3;0.6;0.3" dur="3s" repeatCount="indefinite" />
-        </rect>}
-      </g>
-    </g>
-  )
-}
-
-// --- Character SVG (minimalist isometric person) ---
-function IsoCharacter({ x, y, color, isOffline }: { x: number; y: number; color: string; isOffline: boolean }) {
-  const opacity = isOffline ? 0.25 : 1
-  return (
-    <g transform={`translate(${x + 55}, ${y - 50})`} opacity={opacity}>
-      {/* Head */}
-      <circle cx="0" cy="-12" r="6" fill={`${color}60`} stroke={color} strokeWidth="1" />
-      {/* Body */}
-      <ellipse cx="0" cy="2" rx="5" ry="8" fill={`${color}40`} stroke={`${color}60`} strokeWidth="0.8" />
-      {/* Status ring */}
-      {!isOffline && (
-        <circle cx="0" cy="-12" r="9" fill="none" stroke={color} strokeWidth="0.5" opacity="0.4">
-          <animate attributeName="r" values="9;12;9" dur="2.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2.5s" repeatCount="indefinite" />
-        </circle>
-      )}
-    </g>
-  )
-}
-
-// --- Status bubble ---
-function StatusBubble({ x, y, text, color }: { x: number; y: number; text: string; color: string }) {
-  return (
-    <g transform={`translate(${x + 70}, ${y - 65})`}>
-      <rect x="-4" y="-10" width={Math.min(text.length * 5.5 + 12, 120)} height="16" rx="8" fill="rgba(0,0,0,0.7)" stroke={`${color}40`} strokeWidth="0.5" />
-      <text x={Math.min(text.length * 5.5 + 12, 120) / 2 - 4} y="-1" textAnchor="middle" fill={`${color}cc`} fontSize="7" fontFamily="system-ui">{text.length > 18 ? text.slice(0, 18) + '…' : text}</text>
-    </g>
-  )
-}
-
-// --- Name label ---
-function NameLabel({ x, y, name, model, color }: { x: number; y: number; name: string; model: string; color: string }) {
-  return (
-    <g transform={`translate(${x + 70}, ${y + 20})`}>
-      <text x="0" y="0" textAnchor="middle" fill={color} fontSize="11" fontWeight="600" fontFamily="system-ui">{name}</text>
-      <text x="0" y="12" textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="system-ui">{model}</text>
-    </g>
-  )
-}
+// --- (SVG helpers removed — using AI background image) ---
 
 // --- Arrow for workflows ---
 function ArrowRight() {
@@ -232,70 +146,65 @@ export default function AgentsPage() {
           </div>
         </header>
 
-        {/* === ISOMETRIC OFFICE SVG === */}
+        {/* === ISOMETRIC OFFICE (AI Background + Clickable Hotspots) === */}
         <section className="mb-8">
-          <div className="rounded-2xl border border-gray-800/40 bg-gray-900/20 p-2 overflow-hidden">
-            <svg
-              viewBox="0 0 840 380"
-              className="w-full h-auto"
-              style={{ minHeight: '280px' }}
-            >
-              {/* Grid floor lines */}
-              <defs>
-                <linearGradient id="floorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="rgba(59,130,246,0.03)" />
-                  <stop offset="100%" stopColor="rgba(6,182,212,0.02)" />
-                </linearGradient>
-              </defs>
+          <div className="rounded-2xl border border-gray-800/40 bg-gray-900/20 overflow-hidden relative">
+            {/* AI-generated office background */}
+            <img
+              src="/office-bg.png"
+              alt="Isometric AI Office"
+              className="w-full h-auto block"
+              style={{ minHeight: '280px', objectFit: 'cover' }}
+            />
 
-              {/* Floor tiles grid */}
-              {Array.from({ length: 5 }).map((_, gx) =>
-                Array.from({ length: 5 }).map((_, gy) => {
-                  const { x, y } = gridToIso(gx, gy)
-                  return (
-                    <polygon
-                      key={`floor-${gx}-${gy}`}
-                      points={`${x},${y} ${x + TILE_W / 2},${y - TILE_H / 2} ${x + TILE_W},${y} ${x + TILE_W / 2},${y + TILE_H / 2}`}
-                      fill="url(#floorGrad)"
-                      stroke="rgba(255,255,255,0.03)"
-                      strokeWidth="0.5"
-                    />
-                  )
-                })
-              )}
-
-              {/* Agents: desks, characters, labels */}
-              {agents.map((agent) => {
-                const { x, y } = gridToIso(agent.gridX, agent.gridY)
-                const isOff = agent.status === 'offline'
-                const isSel = selected?.name === agent.name
-                return (
-                  <g
-                    key={agent.name}
-                    className="cursor-pointer"
-                    onClick={() => handleClick(agent)}
-                    style={{ filter: isSel ? `drop-shadow(0 0 12px ${agent.color}40)` : undefined }}
+            {/* Clickable agent hotspots overlaid on image */}
+            {/* Positions are % based to stay responsive */}
+            {agents.map((agent) => {
+              const isOff = agent.status === 'offline'
+              const isSel = selected?.name === agent.name
+              // Map grid positions to approximate % positions on the office image
+              // The image has 8 desks in roughly a 3x3 grid pattern
+              const posMap: Record<string, { top: string; left: string }> = {
+                Secretary:  { top: '18%', left: '8%' },
+                Jarvis:     { top: '18%', left: '32%' },
+                Inspector:  { top: '18%', left: '56%' },
+                Designer:   { top: '18%', left: '80%' },
+                Writer:     { top: '48%', left: '8%' },
+                Researcher: { top: '48%', left: '32%' },
+                Coder:      { top: '48%', left: '56%' },
+                Trader:     { top: '78%', left: '32%' },
+              }
+              const pos = posMap[agent.name] || { top: '50%', left: '50%' }
+              
+              return (
+                <button
+                  key={agent.name}
+                  onClick={() => handleClick(agent)}
+                  className={`absolute transition-all duration-200 group ${isOff ? 'opacity-40' : ''}`}
+                  style={{
+                    top: pos.top,
+                    left: pos.left,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                >
+                  {/* Agent label chip */}
+                  <div
+                    className={`px-3 py-1.5 rounded-lg backdrop-blur-sm text-center transition-all
+                      ${isSel ? 'scale-110' : 'group-hover:scale-105'}`}
+                    style={{
+                      background: isSel ? `${agent.color}30` : 'rgba(0,0,0,0.6)',
+                      border: `1.5px solid ${isSel ? agent.color : `${agent.color}40`}`,
+                      boxShadow: isSel ? `0 0 16px ${agent.color}30` : 'none',
+                    }}
                   >
-                    {/* Selection highlight */}
-                    {isSel && (
-                      <polygon
-                        points={`${x},${y} ${x + TILE_W / 2},${y - TILE_H / 2} ${x + TILE_W},${y} ${x + TILE_W / 2},${y + TILE_H / 2}`}
-                        fill={`${agent.color}10`}
-                        stroke={agent.color}
-                        strokeWidth="1.5"
-                        opacity="0.6"
-                      />
-                    )}
-                    <IsoDeskSVG x={x} y={y} color={agent.color} isOffline={isOff} />
-                    <IsoCharacter x={x} y={y} color={agent.color} isOffline={isOff} />
-                    <NameLabel x={x} y={y} name={agent.name} model={agent.model} color={agent.color} />
-                    {!isOff && (
-                      <StatusBubble x={x} y={y} text={agent.currentTask} color={agent.color} />
-                    )}
-                  </g>
-                )
-              })}
-            </svg>
+                    <div className="text-xs font-bold" style={{ color: agent.color }}>{agent.name}</div>
+                    <div className="text-[9px] text-gray-400">{agent.model}</div>
+                    {/* Status dot */}
+                    <div className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border border-black ${isOff ? 'bg-gray-600' : 'bg-emerald-400'}`} />
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </section>
 
