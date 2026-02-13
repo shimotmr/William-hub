@@ -17,6 +17,23 @@ const mockStats = {
   ],
 }
 
+const tasks = [
+  { id: 1, agent: 'Coder', task: '普渡知識庫 markdown 清洗 + qmd 索引', status: 'done' as const },
+  { id: 2, agent: 'Designer', task: 'Agent 辦公室展示頁 — 等距視角 + Galgame 對話', status: 'planned' as const },
+  { id: 3, agent: 'Coder', task: 'Portal 業績圖表 75% 標籤修正', status: 'in-progress' as const },
+  { id: 4, agent: 'Inspector', task: '知識庫清洗品質驗證（抽樣 20 篇）', status: 'planned' as const },
+  { id: 5, agent: 'Coder', task: 'Trade 頁面 Phase 2 — 接真實報價 API', status: 'planned' as const },
+  { id: 6, agent: 'Researcher', task: '普渡雲端文件中心 + 學習中心爬取', status: 'planned' as const },
+  { id: 7, agent: 'Coder', task: 'EasyFlow 下次簽核實戰測試', status: 'planned' as const },
+  { id: 8, agent: 'Designer', task: 'William Hub + Portal 統一設計規範', status: 'planned' as const },
+]
+
+const taskStatusColors = {
+  'done': { dot: 'bg-emerald-400', text: 'text-emerald-400', label: '完成' },
+  'in-progress': { dot: 'bg-amber-400', text: 'text-amber-400', label: '進行中' },
+  'planned': { dot: 'bg-gray-500', text: 'text-gray-500', label: '待排' },
+}
+
 const apps = [
   {
     name: 'Aurotek Portal',
@@ -211,6 +228,32 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Tasks */}
+        <section className="mb-8 rounded-xl border border-gray-800/60 bg-gray-900/40 backdrop-blur-sm">
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Tasks</h2>
+              <span className="text-xs text-gray-600">{tasks.filter(t => t.status === 'done').length}/{tasks.length} done</span>
+            </div>
+            <div className="space-y-2.5">
+              {tasks.map((t) => {
+                const s = taskStatusColors[t.status]
+                return (
+                  <div key={t.id} className={`flex items-start gap-3 text-sm ${t.status === 'done' ? 'opacity-50' : ''}`}>
+                    <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <span className={`${t.status === 'done' ? 'line-through text-gray-500' : 'text-gray-300'}`}>
+                        {t.task}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-600 shrink-0">{t.agent}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>
