@@ -1,21 +1,20 @@
 // ============================================================
 // William Hub — Professional Dashboard v2
 // ============================================================
+'use client'
 
-// --- Mock Data (replace with API later) ---
-const mockStats = {
-  tokens: { today: 42_850, week: 287_600, month: 1_124_000, total: 8_750_000 },
-  agents: [
-    { name: 'Jarvis', status: 'ok' as const },
-    { name: 'Inspector', status: 'ok' as const },
-    { name: 'Secretary', status: 'ok' as const },
-    { name: 'Writer', status: 'ok' as const },
-    { name: 'Researcher', status: 'ok' as const },
-    { name: 'Coder', status: 'ok' as const },
-    { name: 'Designer', status: 'ok' as const },
-    { name: 'Trader', status: 'idle' as const },
-  ],
-}
+import { useState, useEffect } from 'react'
+
+const agentsList = [
+  { name: 'Jarvis', status: 'ok' as const },
+  { name: 'Inspector', status: 'ok' as const },
+  { name: 'Secretary', status: 'ok' as const },
+  { name: 'Writer', status: 'ok' as const },
+  { name: 'Researcher', status: 'ok' as const },
+  { name: 'Coder', status: 'ok' as const },
+  { name: 'Designer', status: 'ok' as const },
+  { name: 'Trader', status: 'idle' as const },
+]
 
 const tasks = [
   { id: 1, agent: 'Coder', task: '普渡知識庫 markdown 清洗 + qmd 索引', status: 'done' as const },
@@ -175,7 +174,15 @@ function ArrowRight() {
 // Page Component
 // ============================================================
 export default function Home() {
-  const { tokens, agents } = mockStats
+  const agents = agentsList
+  const [tokens, setTokens] = useState({ today: 0, week: 0, month: 0, total: 0 })
+
+  useEffect(() => {
+    fetch('/api/token-stats')
+      .then(r => r.json())
+      .then(d => { if (d && !d.error) setTokens(d) })
+      .catch(() => {})
+  }, [])
 
   return (
     <main className="min-h-screen relative overflow-hidden">
