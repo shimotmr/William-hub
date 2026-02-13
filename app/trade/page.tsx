@@ -237,12 +237,20 @@ export default function TradePage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: C.bg0, fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      {/* === TOP: Market Ticker Bar === */}
-      <div className="flex items-center gap-0 border-b overflow-x-auto" style={{ borderColor: C.border, background: C.bg1 }}>
+      {/* === TOP: Navigation Bar === */}
+      <div className="flex items-center border-b" style={{ borderColor: C.border, background: C.bg1 }}>
         <a href="/" className="px-4 py-2 text-sm font-bold shrink-0" style={{ color: C.accent }}>← Hub</a>
-        <div className="flex items-center gap-0 flex-1">
-          {indices.map((idx, i) => (
-            <div key={i} className="flex items-center gap-2 px-4 py-2 border-r shrink-0" style={{ borderColor: C.border }}>
+        <div className="flex-1" />
+        <div className="px-4 py-2 text-xs shrink-0" style={{ color: C.textMuted }}>
+          2026/02/13 13:30 盤中
+        </div>
+      </div>
+
+      {/* === TOP: Market Ticker (marquee) === */}
+      <div className="border-b overflow-hidden relative" style={{ borderColor: C.border, background: C.bg0 }}>
+        <div className="flex items-center gap-0 animate-marquee whitespace-nowrap" style={{ animation: 'marquee 30s linear infinite' }}>
+          {[...indices, ...indices].map((idx, i) => (
+            <div key={i} className="flex items-center gap-2 px-5 py-2 shrink-0">
               <span className="text-xs" style={{ color: C.textMuted }}>{idx.name}</span>
               <span className="text-sm font-semibold tabular-nums" style={{ color: C.text, fontVariantNumeric: 'tabular-nums' }}>
                 {fmt(idx.value)}
@@ -253,15 +261,13 @@ export default function TradePage() {
             </div>
           ))}
         </div>
-        <div className="px-4 py-2 text-xs shrink-0" style={{ color: C.textMuted }}>
-          2026/02/13 13:30 盤中
-        </div>
+        <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
       </div>
 
       {/* === MAIN AREA === */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-auto">
         {/* === LEFT: Watchlist + Detail === */}
-        <div className="flex-1 flex flex-col border-r overflow-hidden" style={{ borderColor: C.border }}>
+        <div className="flex-1 flex flex-col lg:border-r overflow-hidden" style={{ borderColor: C.border }}>
           {/* Tab bar */}
           <div className="flex items-center border-b overflow-x-auto" style={{ borderColor: C.border, background: C.bg1 }}>
             {defaultGroups.map(g => (
@@ -399,7 +405,7 @@ export default function TradePage() {
         </div>
 
         {/* === RIGHT: Orders / Positions / Risk === */}
-        <div className="flex flex-col" style={{ width: 380, background: C.bg1 }}>
+        <div className="flex flex-col lg:w-[380px] w-full" style={{ background: C.bg1 }}>
           {/* Right tabs */}
           <div className="flex border-b" style={{ borderColor: C.border }}>
             {([['orders', '📋 交易', todayOrders.length], ['positions', '💰 持倉', positions.length], ['risk', '🛡️ 風控', null]] as const).map(([key, label, count]) => (
@@ -591,9 +597,9 @@ export default function TradePage() {
 
         <div className="p-4">
           {bottomTab === 'performance' && (
-            <div className="flex gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Stats cards */}
-              <div className="grid grid-cols-4 gap-3 shrink-0" style={{ width: 480 }}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 lg:w-[480px]">
                 {[
                   { label: '累計損益', value: `+$${fmt(perfData.totalPnl)}`, color: C.up },
                   { label: '今日損益', value: `+$${fmt(perfData.todayPnl)}`, color: C.up },
@@ -619,7 +625,7 @@ export default function TradePage() {
           )}
 
           {bottomTab === 'strategy' && (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {strategies.map((s, i) => (
                 <div key={i} className="rounded-lg p-4" style={{ background: C.bg2, border: `1px solid ${s.active ? C.accent : C.border}` }}>
                   <div className="flex items-center justify-between mb-3">
