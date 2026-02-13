@@ -31,7 +31,7 @@ const agents: Agent[] = [
     skills: ['全局調度', '任務分配', '品質驗收', '記憶管理'],
     currentTask: '系統監控 + 任務調度', desk: '指揮中心',
     quotes: ['所有 Agent 狀態正常，系統運行中。', '今天的任務清單已更新，準備好了嗎？', '有什麼需要我調度的，說一聲。'],
-    top: '22%', left: '22%',
+    top: '28%', left: '18%',
   },
   {
     name: 'Secretary', prefix: 'S:', role: '郵件、行事曆、簽核通知', model: 'Sonnet',
@@ -39,7 +39,7 @@ const agents: Agent[] = [
     skills: ['Zimbra 郵件', 'Google Calendar', 'EasyFlow 簽核', '會議排程'],
     currentTask: '待命中', desk: '前台',
     quotes: ['目前沒有待簽核的文件。', '下週行程已經整理好了。', '有新郵件進來我會第一時間通知。'],
-    top: '22%', left: '42%',
+    top: '28%', left: '38%',
   },
   {
     name: 'Inspector', prefix: 'I:', role: '巡檢、程式審查、測試、品質把關', model: 'Sonnet',
@@ -47,7 +47,7 @@ const agents: Agent[] = [
     skills: ['程式碼 Review', '功能測試', '安全掃描', '效能檢查'],
     currentTask: '待命中', desk: '品管室',
     quotes: ['程式碼品質就是產品品質。', '每一行 code 都要經得起 review。', '最近的 commit 都通過檢查了。'],
-    top: '22%', left: '62%',
+    top: '28%', left: '58%',
   },
   {
     name: 'Designer', prefix: 'D:', role: '美學設計、UX/UI、風格規範', model: 'Sonnet',
@@ -55,7 +55,7 @@ const agents: Agent[] = [
     skills: ['UI/UX 設計', 'CSS 風格', '色彩學', '資料視覺化', '圖片生成'],
     currentTask: 'Agent 展示頁設計中', desk: '設計區',
     quotes: ['美學不是裝飾，是溝通。', 'Emoji？拜託，我們用 SVG。', '每個像素都有它存在的理由。'],
-    top: '22%', left: '82%',
+    top: '28%', left: '78%',
   },
   {
     name: 'Writer', prefix: 'W:', role: '報告撰寫、文件產出', model: 'Opus',
@@ -63,7 +63,7 @@ const agents: Agent[] = [
     skills: ['Google Docs', 'SVG 圖表', '研究報告', 'Travis Daily 發布'],
     currentTask: '待命中', desk: '文案區',
     quotes: ['好的報告需要好的資料，Researcher 辛苦了。', '表格呈現數據，圖片呈現邏輯。', '下一篇研究報告主題是什麼？'],
-    top: '50%', left: '22%',
+    top: '58%', left: '18%',
   },
   {
     name: 'Researcher', prefix: 'R:', role: '資料蒐集、深度研究', model: 'Sonnet',
@@ -71,7 +71,7 @@ const agents: Agent[] = [
     skills: ['Web 搜尋', '深度研究', '競品分析', '技術調查'],
     currentTask: '待命中', desk: '資料室',
     quotes: ['資料越深入，結論越有價值。', '普渡知識庫已經建好索引了。', '需要研究什麼題目？我隨時可以開工。'],
-    top: '50%', left: '42%',
+    top: '58%', left: '38%',
   },
   {
     name: 'Coder', prefix: 'C:', role: '程式開發、Portal / Hub / 腳本', model: 'Opus',
@@ -79,7 +79,7 @@ const agents: Agent[] = [
     skills: ['Next.js', 'TypeScript', 'Python', 'Supabase', 'Vercel'],
     currentTask: 'Portal 業績圖表修正', desk: '工程區',
     quotes: ['寫 code 不難，寫好 code 才難。', 'Portal 的新功能快好了。', 'TypeScript 是我的母語。'],
-    top: '50%', left: '62%',
+    top: '58%', left: '58%',
   },
   {
     name: 'Trader', prefix: 'T:', role: '行情監控、交易策略', model: 'Sonnet',
@@ -87,7 +87,7 @@ const agents: Agent[] = [
     skills: ['Yahoo Finance', '台股監控', '策略回測', 'AI 選股'],
     currentTask: '尚未上線', desk: '交易室',
     quotes: ['市場永遠是對的。', '等接上即時行情就能開工了。', '紀律是交易的第一法則。'],
-    top: '50%', left: '82%',
+    top: '58%', left: '78%',
   },
 ]
 
@@ -151,7 +151,7 @@ export default function AgentsPage() {
           <div className="rounded-2xl border border-gray-800/40 overflow-hidden relative"
             style={{ background: '#080a0f' }}>
             {/* Office background image */}
-            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <div className="relative w-full" style={{ paddingBottom: '77.25%' }}>
               <Image
                 src="/agents-office.png"
                 alt="Isometric AI Office"
@@ -179,7 +179,7 @@ export default function AgentsPage() {
                     {/* Neon ring + portrait */}
                     <div
                       className={`relative rounded-full transition-all duration-300 ${isSel ? 'scale-125' : 'group-hover:scale-110'}`}
-                      style={{ width: 'clamp(48px, 8vw, 80px)', height: 'clamp(48px, 8vw, 80px)' }}
+                      style={{ width: 'clamp(40px, 7vw, 72px)', height: 'clamp(40px, 7vw, 72px)' }}
                     >
                       {/* Glow ring */}
                       <div
