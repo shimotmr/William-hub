@@ -4,9 +4,16 @@ const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
 
 // GET: 取得所有任務
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?order=created_at.asc`, {
+    const { searchParams } = new URL(request.url)
+    const history = searchParams.get('history') === 'true'
+    
+    const filter = history
+      ? 'status=eq.已完成&order=completed_at.desc'
+      : 'status=neq.已完成&order=created_at.asc'
+    
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?${filter}`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,

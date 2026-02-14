@@ -12,6 +12,7 @@ type Task = {
   status: string
   created_at: string
   updated_at: string
+  completed_at: string | null
 }
 
 // SVG Icon Components
@@ -35,6 +36,23 @@ function IconUser({ color }: { color: string }) {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function IconHistory({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  )
+}
+
+function IconCheck({ color }: { color: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   )
 }
@@ -64,69 +82,42 @@ function IconSquare({ color }: { color: string }) {
   )
 }
 
-const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
-  '待執行': { 
-    bg: 'rgba(107, 114, 128, 0.15)', 
-    text: '#9ca3af', 
-    dot: '#6b7280' 
-  },
-  '執行中': { 
-    bg: 'rgba(59, 130, 246, 0.15)', 
-    text: '#60a5fa', 
-    dot: '#3b82f6' 
-  },
-  '完成': { 
-    bg: 'rgba(16, 185, 129, 0.15)', 
-    text: '#34d399', 
-    dot: '#10b981' 
-  },
-  '✅完成': { 
-    bg: 'rgba(16, 185, 129, 0.15)', 
-    text: '#34d399', 
-    dot: '#10b981' 
-  },
-  '等待': { 
-    bg: 'rgba(245, 158, 11, 0.15)', 
-    text: '#fbbf24', 
-    dot: '#f59e0b' 
-  },
-  '⏸️等待': { 
-    bg: 'rgba(245, 158, 11, 0.15)', 
-    text: '#fbbf24', 
-    dot: '#f59e0b' 
-  },
-  '中期目標': { 
-    bg: 'rgba(168, 85, 247, 0.15)', 
-    text: '#c084fc', 
-    dot: '#a855f7' 
-  },
-  '待需求觸發': { 
-    bg: 'rgba(75, 85, 99, 0.15)', 
-    text: '#9ca3af', 
-    dot: '#6b7280' 
-  },
+const priorityMap: Record<string, { icon: (c: string) => React.ReactNode; color: string; label: string }> = {
+  '🔴': { icon: (c) => <IconFlag color={c} />, color: '#ef4444', label: '緊急' },
+  '🟡': { icon: (c) => <IconCircle color={c} />, color: '#f59e0b', label: '短期' },
+  '🔵': { icon: (c) => <IconCircle color={c} />, color: '#3b82f6', label: '中期' },
+  '⚪': { icon: (c) => <IconSquare color={c} />, color: '#6b7280', label: '長期' },
 }
 
-function TaskCard({ task }: { task: Task }) {
+const statusColors: Record<string, { bg: string; text: string; dot: string }> = {
+  '待執行': { bg: 'rgba(107, 114, 128, 0.15)', text: '#9ca3af', dot: '#6b7280' },
+  '執行中': { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', dot: '#3b82f6' },
+  '已完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
+  '完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
+  '✅完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
+  '等待': { bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', dot: '#f59e0b' },
+  '⏸️等待': { bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', dot: '#f59e0b' },
+  '中期目標': { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', dot: '#a855f7' },
+  '待需求觸發': { bg: 'rgba(75, 85, 99, 0.15)', text: '#9ca3af', dot: '#6b7280' },
+  '待規劃': { bg: 'rgba(75, 85, 99, 0.15)', text: '#9ca3af', dot: '#6b7280' },
+  '長期目標': { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', dot: '#a855f7' },
+}
+
+function formatDate(d: string) {
+  const date = new Date(d)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
   const statusStyle = statusColors[task.status] || statusColors['待執行']
-  
-  // 優先級 icon 對應
-  const getPriorityIcon = () => {
-    const priority = task.priority.toLowerCase()
-    if (priority.includes('high') || task.priority === '🔥') {
-      return <IconFlag color="#ef4444" />
-    } else if (priority.includes('medium') || task.priority === '⚡') {
-      return <IconCircle color="#f59e0b" />
-    } else {
-      return <IconSquare color="#6b7280" />
-    }
-  }
-  
+  const p = priorityMap[task.priority] || priorityMap['⚪']
+
   return (
-    <div 
-      className="group rounded-xl border bg-gray-900/30 backdrop-blur-sm p-4 transition-all duration-200"
+    <div
+      className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''}`}
       style={{
         borderColor: 'rgba(31, 41, 55, 0.5)',
+        background: 'rgba(17, 24, 39, 0.3)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'rgba(55, 65, 81, 0.6)'
@@ -139,85 +130,80 @@ function TaskCard({ task }: { task: Task }) {
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
-      {/* Priority + Status */}
       <div className="flex items-center justify-between mb-2">
-        {/* Priority Icon */}
-        <div className="flex items-center gap-1">
-          {getPriorityIcon()}
+        <div className="flex items-center gap-1.5">
+          {p.icon(p.color)}
+          <span className="text-[10px] font-medium" style={{ color: p.color }}>{p.label}</span>
         </div>
-        
-        {/* Status Badge */}
-        <div 
+        <div
           className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
-          style={{ 
-            background: statusStyle.bg, 
-            color: statusStyle.text 
-          }}
+          style={{ background: statusStyle.bg, color: statusStyle.text }}
         >
-          <span 
-            className="w-1.5 h-1.5 rounded-full" 
-            style={{ background: statusStyle.dot }}
-          />
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
           <span>{task.status}</span>
         </div>
       </div>
-      
-      {/* Title */}
-      <h3 className="text-sm font-medium text-gray-200 mb-2 leading-snug line-clamp-2 sm:line-clamp-1">
+
+      <h3 className={`text-sm font-medium mb-2 leading-snug ${isHistory ? 'line-through text-gray-500' : 'text-gray-200'}`}>
         {task.title}
       </h3>
-      
-      {/* Assignee */}
-      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-        <span>{task.assignee}</span>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>{task.assignee}</span>
+        </div>
+        {isHistory && task.completed_at && (
+          <div className="flex items-center gap-1 text-[10px] text-emerald-500/70">
+            <IconCheck color="#10b981" />
+            <span>{formatDate(task.completed_at)}</span>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function BoardColumn({ 
-  title, 
-  icon, 
-  tasks, 
-  accentColor 
-}: { 
+function BoardColumn({
+  title,
+  icon,
+  tasks,
+  accentColor,
+  isHistory,
+}: {
   title: string
   icon: React.ReactNode
   tasks: Task[]
   accentColor: string
+  isHistory?: boolean
 }) {
   return (
-    <div 
+    <div
       className="flex-1 min-w-0 rounded-xl border p-4 sm:p-5"
       style={{
         borderColor: `${accentColor}33`,
         background: `${accentColor}0D`,
       }}
     >
-      {/* Column Header */}
-      <div 
+      <div
         className="flex items-center gap-2 mb-4 pb-3 border-b"
         style={{ borderColor: `${accentColor}33` }}
       >
-        <div className="flex-shrink-0">
-          {icon}
-        </div>
+        <div className="flex-shrink-0">{icon}</div>
         <h2 className="text-base font-semibold text-gray-200">{title}</h2>
         <span className="ml-auto text-xs text-gray-600 font-medium">{tasks.length}</span>
       </div>
-      
-      {/* Tasks */}
+
       <div className="space-y-3">
         {tasks.length === 0 ? (
           <div className="text-center text-gray-600 text-sm py-8">
-            無任務
+            {isHistory ? '尚無已完成任務' : '無任務'}
           </div>
         ) : (
-          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+          tasks.map((task) => <TaskCard key={task.id} task={task} isHistory={isHistory} />)
         )}
       </div>
     </div>
@@ -226,15 +212,18 @@ function BoardColumn({
 
 export default function BoardPage() {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [historyTasks, setHistoryTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<'active' | 'history'>('active')
 
   useEffect(() => {
-    fetch('/api/board')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setTasks(data)
-        }
+    Promise.all([
+      fetch('/api/board').then((r) => r.json()),
+      fetch('/api/board?history=true').then((r) => r.json()),
+    ])
+      .then(([active, history]) => {
+        if (Array.isArray(active)) setTasks(active)
+        if (Array.isArray(history)) setHistoryTasks(history)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -254,8 +243,8 @@ export default function BoardPage() {
         <header className="mb-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white hover:scale-105 transition-transform"
               >
                 W
@@ -265,35 +254,62 @@ export default function BoardPage() {
                 <p className="text-gray-500 text-xs sm:text-sm">任務看板</p>
               </div>
             </div>
-            <Link 
-              href="/" 
-              className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition-colors"
-            >
+            <Link href="/" className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition-colors">
               ← Back to Hub
             </Link>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 bg-gray-900/50 rounded-lg w-fit border border-gray-800/50">
+            <button
+              onClick={() => setTab('active')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                tab === 'active'
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+              }`}
+            >
+              進行中 ({tasks.length})
+            </button>
+            <button
+              onClick={() => setTab('history')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                tab === 'history'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+              }`}
+            >
+              歷史 ({historyTasks.length})
+            </button>
           </div>
         </header>
 
         {/* Board */}
         {loading ? (
-          <div className="text-center text-gray-500 py-20">
-            Loading...
-          </div>
-        ) : (
+          <div className="text-center text-gray-500 py-20">Loading...</div>
+        ) : tab === 'active' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BoardColumn 
-              title="Agent 看板" 
-              icon={<IconRobot color="#3b82f6" />} 
-              tasks={agentTasks} 
+            <BoardColumn
+              title="Agent 看板"
+              icon={<IconRobot color="#3b82f6" />}
+              tasks={agentTasks}
               accentColor="#3b82f6"
             />
-            <BoardColumn 
-              title="William 看板" 
-              icon={<IconUser color="#f59e0b" />} 
-              tasks={williamTasks} 
+            <BoardColumn
+              title="William 看板"
+              icon={<IconUser color="#f59e0b" />}
+              tasks={williamTasks}
               accentColor="#f59e0b"
             />
           </div>
+        ) : (
+          <BoardColumn
+            title="已完成任務"
+            icon={<IconHistory color="#10b981" />}
+            tasks={historyTasks}
+            accentColor="#10b981"
+            isHistory
+          />
         )}
 
         {/* Footer */}
