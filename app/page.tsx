@@ -53,6 +53,15 @@ const apps = [
     borderColor: 'rgba(59,130,246,0.25)',
   },
   {
+    name: 'Task Board',
+    desc: 'Agent + William 任務看板',
+    url: '/board',
+    tag: 'LIVE',
+    accent: '#f59e0b',
+    accentBg: 'rgba(245,158,11,0.08)',
+    borderColor: 'rgba(245,158,11,0.25)',
+  },
+  {
     name: 'Trading System',
     desc: '程式交易 / 策略回測 / 即時監控',
     url: '/trade',
@@ -128,9 +137,25 @@ function IconTravis({ color }: { color: string }) {
   )
 }
 
+function IconBoard({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="8" height="8" rx="1" />
+      <rect x="13" y="3" width="8" height="8" rx="1" />
+      <rect x="3" y="13" width="8" height="8" rx="1" />
+      <rect x="13" y="13" width="8" height="8" rx="1" />
+      <line x1="5" y1="6" x2="9" y2="6" />
+      <line x1="5" y1="8" x2="7" y2="8" />
+      <line x1="15" y1="6" x2="19" y2="6" />
+      <line x1="15" y1="8" x2="17" y2="8" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Aurotek Portal': IconAurotek,
   'Travis Daily': IconTravisDaily,
+  'Task Board': IconBoard,
   'Trading System': IconTrading,
   'Travis': IconTravis,
 }
