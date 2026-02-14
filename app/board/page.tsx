@@ -145,6 +145,7 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
       </div>
 
       <h3 className={`text-sm font-medium mb-2 leading-snug ${isHistory ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+        <span className="text-gray-600 font-mono text-xs mr-1.5">#{task.id}</span>
         {task.title}
       </h3>
 
