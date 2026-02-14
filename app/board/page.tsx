@@ -8,6 +8,7 @@ type Task = {
   board: 'agent' | 'william'
   priority: string
   title: string
+  description: string | null
   assignee: string
   status: string
   created_at: string
@@ -108,25 +109,42 @@ function formatDate(d: string) {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={`transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
 function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
+  const [expanded, setExpanded] = useState(false)
   const statusStyle = statusColors[task.status] || statusColors['待執行']
   const p = priorityMap[task.priority] || priorityMap['⚪']
+  const hasDesc = !!task.description?.trim()
 
   return (
     <div
-      className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''}`}
+      className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''} ${hasDesc ? 'cursor-pointer' : ''}`}
       style={{
-        borderColor: 'rgba(31, 41, 55, 0.5)',
-        background: 'rgba(17, 24, 39, 0.3)',
+        borderColor: expanded ? 'rgba(55, 65, 81, 0.7)' : 'rgba(31, 41, 55, 0.5)',
+        background: expanded ? 'rgba(17, 24, 39, 0.5)' : 'rgba(17, 24, 39, 0.3)',
       }}
+      onClick={() => hasDesc && setExpanded(!expanded)}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'rgba(55, 65, 81, 0.6)'
         e.currentTarget.style.backgroundColor = 'rgba(17, 24, 39, 0.4)'
         e.currentTarget.style.transform = 'translateY(-1px)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(31, 41, 55, 0.5)'
-        e.currentTarget.style.backgroundColor = 'rgba(17, 24, 39, 0.3)'
+        if (!expanded) {
+          e.currentTarget.style.borderColor = 'rgba(31, 41, 55, 0.5)'
+          e.currentTarget.style.backgroundColor = 'rgba(17, 24, 39, 0.3)'
+        }
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -144,10 +162,29 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
         </div>
       </div>
 
-      <h3 className={`text-sm font-medium mb-2 leading-snug ${isHistory ? 'line-through text-gray-500' : 'text-gray-200'}`}>
-        <span className="text-gray-600 font-mono text-xs mr-1.5">#{task.id}</span>
-        {task.title}
-      </h3>
+      <div className="flex items-start gap-1.5 mb-2">
+        {hasDesc && (
+          <span className="mt-0.5 flex-shrink-0 text-gray-600">
+            <IconChevron open={expanded} />
+          </span>
+        )}
+        <h3
+          className={`text-sm font-medium leading-snug ${isHistory ? 'line-through text-gray-500' : 'text-gray-200'}`}
+          title={hasDesc ? task.description! : undefined}
+        >
+          <span className="text-gray-600 font-mono text-xs mr-1.5">#{task.id}</span>
+          {task.title}
+        </h3>
+      </div>
+
+      {/* Expandable description */}
+      {hasDesc && expanded && (
+        <div className="mb-3 ml-5 pl-3 border-l-2 border-gray-700/50">
+          <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">
+            {task.description}
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs text-gray-500">
