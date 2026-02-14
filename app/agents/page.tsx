@@ -155,7 +155,7 @@ export default function AgentsPage() {
                   style={{
                     borderColor: isSel ? `${agent.color}50` : 'rgba(31,41,55,0.4)',
                     background: isSel ? `${agent.color}08` : 'rgba(17,24,39,0.3)',
-                    ringColor: isSel ? `${agent.color}30` : undefined,
+                    boxShadow: isSel ? `0 0 0 2px ${agent.color}30` : undefined,
                   }}
                 >
                   {/* Top: Avatar + Name */}
