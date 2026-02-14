@@ -21,7 +21,7 @@ interface Agent {
 
 const agents: Agent[] = [
   {
-    name: 'Jarvis', prefix: 'J:', role: '總指揮、調度、審核、驗收', model: 'Opus',
+    name: 'Travis', prefix: 'T:', role: '總指揮、調度、審核、驗收', model: 'Opus',
     status: 'online', color: '#3b82f6',
     skills: ['全局調度', '任務分配', '品質驗收', '記憶管理'],
     currentTask: '系統監控 + 任務調度', desk: '指揮中心',
@@ -79,9 +79,9 @@ const agents: Agent[] = [
 ]
 
 const workflows = [
-  { name: '開發流程', flow: ['Designer', 'Coder', 'Inspector', 'Jarvis'], desc: '設計 → 實作 → 審查 → 驗收', color: '#3b82f6' },
-  { name: '報告流程', flow: ['Researcher', 'Writer', 'Designer', 'Jarvis'], desc: '研究 → 撰寫 → 美化 → 驗收', color: '#8b5cf6' },
-  { name: '簽核流程', flow: ['Secretary', 'Jarvis', 'William'], desc: '偵測 → 摘要 → 人工確認', color: '#f59e0b' },
+  { name: '開發流程', flow: ['Designer', 'Coder', 'Inspector', 'Travis'], desc: '設計 → 實作 → 審查 → 驗收', color: '#3b82f6' },
+  { name: '報告流程', flow: ['Researcher', 'Writer', 'Designer', 'Travis'], desc: '研究 → 撰寫 → 美化 → 驗收', color: '#8b5cf6' },
+  { name: '簽核流程', flow: ['Secretary', 'Travis', 'William'], desc: '偵測 → 摘要 → 人工確認', color: '#f59e0b' },
 ]
 
 function ArrowRight() {

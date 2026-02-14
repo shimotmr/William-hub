@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 
 const agentsList = [
-  { name: 'Jarvis', status: 'ok' as const },
+  { name: 'Travis', status: 'ok' as const },
   { name: 'Inspector', status: 'ok' as const },
   { name: 'Secretary', status: 'ok' as const },
   { name: 'Writer', status: 'ok' as const },
