@@ -21,7 +21,7 @@ interface Agent {
 
 const agents: Agent[] = [
   {
-    name: 'Travis', prefix: 'T:', role: '總指揮、調度、審核、驗收', model: 'Opus',
+    name: 'Travis', prefix: 'A:', role: '總指揮、調度、審核、驗收', model: 'Opus',
     status: 'online', color: '#3b82f6',
     skills: ['全局調度', '任務分配', '品質驗收', '記憶管理'],
     currentTask: '系統監控 + 任務調度', desk: '指揮中心',
@@ -70,7 +70,7 @@ const agents: Agent[] = [
     quotes: ['寫 code 不難，寫好 code 才難。', 'Portal 的新功能快好了。', 'TypeScript 是我的母語。'],
   },
   {
-    name: 'Trader', prefix: 'T:', role: '行情監控、交易策略', model: 'Sonnet',
+    name: 'Analyst', prefix: 'A:', role: '行情監控、交易策略', model: 'Sonnet',
     status: 'offline', color: '#eab308',
     skills: ['Yahoo Finance', '台股監控', '策略回測', 'AI 選股'],
     currentTask: '尚未上線', desk: '交易室',

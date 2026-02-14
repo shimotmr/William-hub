@@ -13,7 +13,7 @@ const agentsList = [
   { name: 'Researcher', status: 'ok' as const },
   { name: 'Coder', status: 'ok' as const },
   { name: 'Designer', status: 'ok' as const },
-  { name: 'Trader', status: 'idle' as const },
+  { name: 'Analyst', status: 'idle' as const },
 ]
 
 const tasks = [
