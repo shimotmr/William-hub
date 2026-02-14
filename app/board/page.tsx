@@ -9,6 +9,7 @@ type Task = {
   priority: string
   title: string
   description: string | null
+  result: string | null
   assignee: string
   status: string
   created_at: string
@@ -126,15 +127,17 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
   const statusStyle = statusColors[task.status] || statusColors['待執行']
   const p = priorityMap[task.priority] || priorityMap['⚪']
   const hasDesc = !!task.description?.trim()
+  const hasResult = !!task.result?.trim()
+  const expandable = hasDesc || hasResult
 
   return (
     <div
-      className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''} ${hasDesc ? 'cursor-pointer' : ''}`}
+      className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''} ${expandable ? 'cursor-pointer' : ''}`}
       style={{
         borderColor: expanded ? 'rgba(55, 65, 81, 0.7)' : 'rgba(31, 41, 55, 0.5)',
         background: expanded ? 'rgba(17, 24, 39, 0.5)' : 'rgba(17, 24, 39, 0.3)',
       }}
-      onClick={() => hasDesc && setExpanded(!expanded)}
+      onClick={() => expandable && setExpanded(!expanded)}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = 'rgba(55, 65, 81, 0.6)'
         e.currentTarget.style.backgroundColor = 'rgba(17, 24, 39, 0.4)'
@@ -163,7 +166,7 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
       </div>
 
       <div className="flex items-start gap-1.5 mb-2">
-        {hasDesc && (
+        {expandable && (
           <span className="mt-0.5 flex-shrink-0 text-gray-600">
             <IconChevron open={expanded} />
           </span>
@@ -177,12 +180,22 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
         </h3>
       </div>
 
-      {/* Expandable description */}
-      {hasDesc && expanded && (
-        <div className="mb-3 ml-5 pl-3 border-l-2 border-gray-700/50">
-          <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">
-            {task.description}
-          </p>
+      {/* Expandable description + result */}
+      {expandable && expanded && (
+        <div className="mb-3 ml-5 pl-3 border-l-2 border-gray-700/50 space-y-2">
+          {hasDesc && (
+            <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">
+              {task.description}
+            </p>
+          )}
+          {hasResult && (
+            <div className="pt-1.5 border-t border-gray-700/30">
+              <span className="text-[10px] font-medium text-emerald-500/70 uppercase tracking-wider">完成回報</span>
+              <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap mt-1">
+                {task.result}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
