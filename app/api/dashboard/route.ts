@@ -3,11 +3,23 @@ import { NextResponse } from 'next/server'
 const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
 
+const AGENT_ROLES: Record<string, string> = {
+  'Travis': '總管 / 主 Agent',
+  'Coder': '工程開發',
+  'Designer': '設計 / UI',
+  'Inspector': '品質檢測',
+  'Researcher': '資料調研',
+  'Writer': '文案撰寫',
+  'Analyst': '數據分析',
+  'Secretary': '行政秘書',
+}
+
+const KNOWN_AGENTS = Object.keys(AGENT_ROLES)
+
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // Fetch all board_tasks
     const allTasksRes = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?select=*&order=created_at.desc`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
@@ -42,48 +54,54 @@ export async function GET() {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    // Agent stats from board_tasks (fallback approach)
-    const agentMap: Record<string, { total: number; completed: number; todayCompleted: number }> = {}
-    for (const t of allTasks) {
-      const agent = t.assignee || 'Unknown'
-      if (!agentMap[agent]) agentMap[agent] = { total: 0, completed: 0, todayCompleted: 0 }
-      agentMap[agent].total++
-      if (t.status === '已完成') {
-        agentMap[agent].completed++
-        if (t.completed_at && new Date(t.completed_at) >= todayStart) {
-          agentMap[agent].todayCompleted++
-        }
-      }
-    }
-
-    const agents = Object.entries(agentMap).map(([name, stats]) => ({
-      name,
-      total: stats.total,
-      completed: stats.completed,
-      todayCompleted: stats.todayCompleted,
-      successRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
-    })).sort((a, b) => b.total - a.total)
-
-    // Try agent_kpi table (optional)
-    let agentKpi: any[] = []
-    try {
-      const kpiRes = await fetch(`${SUPABASE_URL}/rest/v1/agent_kpi?select=*`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
+    // Agent stats - use known agents list, match by assignee containing agent name
+    const agentStats = KNOWN_AGENTS.map(agentName => {
+      const agentTasks = allTasks.filter((t: any) => {
+        const assignee = (t.assignee || '').toLowerCase()
+        return assignee.includes(agentName.toLowerCase())
       })
-      if (kpiRes.ok) {
-        agentKpi = await kpiRes.json()
+      const completed = agentTasks.filter((t: any) => t.status === '已完成')
+      const todayCompleted = completed.filter((t: any) =>
+        t.completed_at && new Date(t.completed_at) >= todayStart
+      )
+      const activeTasks = agentTasks.filter((t: any) => t.status === '執行中')
+      const currentTask = activeTasks.length > 0 ? activeTasks[0].title : null
+
+      return {
+        name: agentName,
+        role: AGENT_ROLES[agentName],
+        total: agentTasks.length,
+        completed: completed.length,
+        todayCompleted: todayCompleted.length,
+        successRate: agentTasks.length > 0 ? Math.round((completed.length / agentTasks.length) * 100) : 0,
+        currentTask,
+        isActive: activeTasks.length > 0,
       }
-    } catch {}
+    })
+
+    // Recent completed tasks (activity feed)
+    const recentCompleted = allTasks
+      .filter((t: any) => t.status === '已完成' && t.completed_at)
+      .sort((a: any, b: any) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+      .slice(0, 10)
+      .map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        completedAt: t.completed_at,
+        assignee: t.assignee || 'Unknown',
+      }))
+
+    // Completion rate
+    const totalTasks = allTasks.length
+    const completionRate = totalTasks > 0 ? Math.round((statusCounts['已完成'] / totalTasks) * 100) : 0
 
     return NextResponse.json({
       statusCounts,
-      totalTasks: allTasks.length,
+      totalTasks,
       weekCompleted,
-      agents: agentKpi.length > 0 ? agentKpi : agents,
-      agentSource: agentKpi.length > 0 ? 'agent_kpi' : 'board_tasks',
+      completionRate,
+      agents: agentStats,
+      recentCompleted,
     })
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
