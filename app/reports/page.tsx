@@ -4,10 +4,10 @@
 'use client'
 
 import {
-  FileText, FileType, FileDown, ArrowLeft, Loader2,
-  CheckCircle2, ExternalLink, User, Calendar, Filter,
+  FileText, FileDown, ArrowLeft, Loader2,
+  User, Calendar, Filter,
 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -35,68 +35,62 @@ const typeBadge: Record<string, { bg: string; text: string }> = {
   pdf: { bg: 'rgba(239,68,68,0.15)', text: '#f87171' },
 }
 
-// --- Export button states ---
-function ExportButton({
+// --- Export button ---
+function ExportDownloadButton({
   label,
+  icon: Icon,
   format,
-  report,
-  onExport,
+  reportId,
 }: {
   label: string
-  format: 'doc' | 'pdf'
-  report: Report
-  onExport: (id: number, fmt: 'doc' | 'pdf') => void
+  icon: typeof FileDown
+  format: 'pdf' | 'markdown'
+  reportId: number
 }) {
-  const url = format === 'doc' ? report.doc_url : report.pdf_url
-  const isExporting = report.export_status === 'exporting'
+  const [loading, setLoading] = useState(false)
 
-  if (url) {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-        style={{
-          background: 'rgba(16,185,129,0.15)',
-          border: '1px solid #10b981',
-          color: '#10b981',
-        }}
-      >
-        <CheckCircle2 size={14} />
-        {label}
-        <ExternalLink size={12} />
-      </a>
-    )
-  }
-
-  if (isExporting) {
-    return (
-      <button
-        disabled
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium cursor-not-allowed opacity-70"
-        style={{
-          background: 'rgba(251,191,36,0.15)',
-          border: '1px solid #fbbf24',
-          color: '#fbbf24',
-        }}
-      >
-        <Loader2 size={14} className="animate-spin" />
-        {label}...
-      </button>
-    )
+  const handleExport = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/reports/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, format }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Export failed' }))
+        alert(err.error || 'Export failed')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition') || ''
+      const match = disposition.match(/filename="(.+)"/)
+      a.download = match ? match[1] : `report.${format === 'pdf' ? 'pdf' : 'md'}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Export failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <button
-      onClick={() => onExport(report.id, format)}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-white/5"
+      onClick={handleExport}
+      disabled={loading}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-white/5 disabled:opacity-60 disabled:cursor-not-allowed"
       style={{
         border: '1px solid rgba(255,255,255,0.2)',
         color: '#e5e5e5',
       }}
     >
-      <FileDown size={14} />
+      {loading ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />}
       {label}
     </button>
   )
@@ -204,23 +198,6 @@ export default function ReportsPage() {
       .finally(() => setContentLoading(false))
   }, [selectedId])
 
-  const handleExport = useCallback(async (reportId: number, format: 'doc' | 'pdf') => {
-    // Optimistic UI
-    setReports((prev) =>
-      prev.map((r) => (r.id === reportId ? { ...r, export_status: 'exporting' } : r))
-    )
-    if (selectedReport?.id === reportId) {
-      setSelectedReport((prev) => prev ? { ...prev, export_status: 'exporting' } : prev)
-    }
-    try {
-      await fetch('/api/reports/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportId, format }),
-      })
-    } catch {}
-  }, [selectedReport])
-
   const filtered = filter === 'all' ? reports : reports.filter((r) => r.type === filter)
 
   const filters: { label: string; value: FilterType }[] = [
@@ -295,8 +272,8 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
-            <ExportButton label="Doc" format="doc" report={selectedReport} onExport={handleExport} />
-            <ExportButton label="PDF" format="pdf" report={selectedReport} onExport={handleExport} />
+            <ExportDownloadButton label="Export PDF" icon={FileDown} format="pdf" reportId={selectedReport.id} />
+            <ExportDownloadButton label="Export Markdown" icon={FileText} format="markdown" reportId={selectedReport.id} />
           </div>
         </div>
 
