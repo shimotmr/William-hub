@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut } from 'react-chartjs-2'
+import { Target, Code, Palette, Search, BookOpen, PenTool, BarChart3, Mail, Bot, ClipboardList, Zap, CheckCircle, TrendingUp, Users, PieChart, Clock, Check } from 'lucide-react'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -45,15 +46,15 @@ const agentColors: Record<string, string> = {
   'Secretary': '#ec4899',
 }
 
-const agentEmoji: Record<string, string> = {
-  'Travis': '🎯',
-  'Coder': '💻',
-  'Designer': '🎨',
-  'Inspector': '🔍',
-  'Researcher': '📚',
-  'Writer': '✍️',
-  'Analyst': '📊',
-  'Secretary': '📋',
+const agentIcons: Record<string, React.ReactNode> = {
+  'Travis': <Target size={18} />,
+  'Coder': <Code size={18} />,
+  'Designer': <Palette size={18} />,
+  'Inspector': <Search size={18} />,
+  'Researcher': <BookOpen size={18} />,
+  'Writer': <PenTool size={18} />,
+  'Analyst': <BarChart3 size={18} />,
+  'Secretary': <Mail size={18} />,
 }
 
 function getAgentColor(name: string): string {
@@ -150,8 +151,8 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">
-                🤖
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                <Bot size={20} />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Clawd Dashboard</h1>
@@ -175,14 +176,14 @@ export default function DashboardPage() {
             {/* KPI Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[
-                { label: '總任務數', value: data.totalTasks, color: '#60a5fa', icon: '📋' },
-                { label: '執行中', value: data.statusCounts['執行中'] || 0, color: '#facc15', icon: '⚡' },
-                { label: '本週完成', value: data.weekCompleted, color: '#4ade80', icon: '✅' },
-                { label: '完成率', value: `${data.completionRate}%`, color: '#c084fc', icon: '📈' },
+                { label: '總任務數', value: data.totalTasks, color: '#60a5fa', icon: <ClipboardList size={14} /> },
+                { label: '執行中', value: data.statusCounts['執行中'] || 0, color: '#facc15', icon: <Zap size={14} /> },
+                { label: '本週完成', value: data.weekCompleted, color: '#4ade80', icon: <CheckCircle size={14} /> },
+                { label: '完成率', value: `${data.completionRate}%`, color: '#c084fc', icon: <TrendingUp size={14} /> },
               ].map(item => (
                 <div key={item.label} className="group rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-5 hover:border-slate-600/80 hover:bg-slate-800/60 transition-all duration-300">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">{item.icon}</span>
+                    <span className="text-gray-400">{item.icon}</span>
                     <span className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">{item.label}</span>
                   </div>
                   <div className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight" style={{ color: item.color }}>
@@ -195,12 +196,12 @@ export default function DashboardPage() {
             {/* Agent Cards */}
             <section className="mb-8">
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <span>👥</span> Agent 狀態總覽
+                <Users size={14} /> Agent 狀態總覽
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {data.agents.map(agent => {
                   const color = getAgentColor(agent.name)
-                  const emoji = agentEmoji[agent.name] || '🤖'
+                  const icon = agentIcons[agent.name] || <Bot size={18} />
                   return (
                     <div
                       key={agent.name}
@@ -213,8 +214,8 @@ export default function DashboardPage() {
                       {/* Header */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ background: `${color}18` }}>
-                            {emoji}
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${color}18`, color }}>
+                            {icon}
                           </div>
                           <div>
                             <div className="font-semibold text-gray-200 text-sm">{agent.name}</div>
@@ -272,7 +273,7 @@ export default function DashboardPage() {
               {/* Doughnut Chart */}
               <div className="lg:col-span-2 rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-6">
                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <span>📊</span> 任務分布
+                  <PieChart size={14} /> 任務分布
                 </h2>
                 <div className="h-[260px] flex items-center justify-center">
                   {chartData && <Doughnut data={chartData} options={chartOptions} />}
@@ -295,7 +296,7 @@ export default function DashboardPage() {
               {/* Activity Feed */}
               <div className="lg:col-span-3 rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-6">
                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <span>⏱️</span> 最近完成任務
+                  <Clock size={14} /> 最近完成任務
                 </h2>
                 <div className="space-y-1">
                   {data.recentCompleted.length === 0 ? (
@@ -328,7 +329,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           {/* Check */}
-                          <div className="text-green-500/60 text-xs flex-shrink-0">✓</div>
+                          <div className="text-green-500/60 flex-shrink-0"><Check size={14} /></div>
                         </div>
                       )
                     })
