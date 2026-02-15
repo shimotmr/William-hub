@@ -41,17 +41,26 @@ export async function GET() {
       else statusCounts['待執行']++
     }
 
-    // This week completed
-    const now = new Date()
-    const weekStart = new Date(now)
-    weekStart.setDate(now.getDate() - now.getDay())
+    // Use Asia/Taipei timezone for date calculations
+    const nowTpe = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
+    
+    // This week completed (Monday as week start)
+    const weekStart = new Date(nowTpe)
+    const dayOfWeek = weekStart.getDay()
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    weekStart.setDate(weekStart.getDate() - mondayOffset)
     weekStart.setHours(0, 0, 0, 0)
-    const weekCompleted = allTasks.filter((t: any) =>
-      t.status === '已完成' && t.completed_at && new Date(t.completed_at) >= weekStart
-    ).length
+    
+    // Convert weekStart back to UTC for comparison
+    const weekStartStr = weekStart.toLocaleString('en-US', { timeZone: 'Asia/Taipei' })
+    const weekCompleted = allTasks.filter((t: any) => {
+      if (t.status !== '已完成' || !t.completed_at) return false
+      const completedTpe = new Date(new Date(t.completed_at).toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
+      return completedTpe >= weekStart
+    }).length
 
-    // Today
-    const todayStart = new Date()
+    // Today in Asia/Taipei
+    const todayStart = new Date(nowTpe)
     todayStart.setHours(0, 0, 0, 0)
 
     // Agent stats - use known agents list, match by assignee containing agent name
@@ -61,9 +70,11 @@ export async function GET() {
         return assignee.includes(agentName.toLowerCase())
       })
       const completed = agentTasks.filter((t: any) => t.status === '已完成')
-      const todayCompleted = completed.filter((t: any) =>
-        t.completed_at && new Date(t.completed_at) >= todayStart
-      )
+      const todayCompleted = completed.filter((t: any) => {
+        if (!t.completed_at) return false
+        const completedTpe = new Date(new Date(t.completed_at).toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
+        return completedTpe >= todayStart
+      })
       const activeTasks = agentTasks.filter((t: any) => t.status === '執行中')
       const currentTask = activeTasks.length > 0 ? activeTasks[0].title : null
 
