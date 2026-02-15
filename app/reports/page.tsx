@@ -23,6 +23,7 @@ interface Report {
   pdf_url: string | null
   export_status: string | null
   content?: string
+  md_content?: string
 }
 
 type FilterType = 'all' | 'md' | 'doc' | 'pdf'
@@ -302,7 +303,7 @@ export default function ReportsPage() {
         {/* Markdown */}
         <article className="prose-dark">
           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-            {selectedReport.content || '_No content_'}
+            {selectedReport.md_content || selectedReport.content || '_No content_'}
           </ReactMarkdown>
         </article>
       </div>
