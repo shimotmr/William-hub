@@ -136,7 +136,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0f172a] relative overflow-hidden">
+    <main className="min-h-screen bg-background relative overflow-hidden">
       {/* Ambient glow effects */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-blue-500/[0.07] rounded-full blur-[120px]" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-purple-500/[0.05] rounded-full blur-[100px]" />
@@ -145,7 +145,7 @@ export default function DashboardPage() {
       <div className="relative z-10 max-w-6xl mx-auto px-5 py-8 sm:py-12">
         {/* Header */}
         <header className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-300 text-sm mb-4 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-2 text-foreground-muted hover:text-foreground text-sm mb-4 transition-colors">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
             Back to Hub
           </Link>
@@ -155,11 +155,11 @@ export default function DashboardPage() {
                 <Bot size={20} />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Clawd Dashboard</h1>
-                <p className="text-gray-500 text-sm">系統即時監控中心 · 自動更新</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Clawd Dashboard</h1>
+                <p className="text-foreground-muted text-sm">系統即時監控中心 · 自動更新</p>
               </div>
             </div>
-            <div className="hidden sm:block text-right text-xs text-gray-600">
+            <div className="hidden sm:block text-right text-xs text-foreground-subtle">
               每 30 秒自動重整
             </div>
           </div>
@@ -167,10 +167,10 @@ export default function DashboardPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-10 h-10 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-2 border-border border-t-blue-500 rounded-full animate-spin" />
           </div>
         ) : !data ? (
-          <div className="text-center text-gray-500 py-20">載入失敗</div>
+          <div className="text-center text-foreground-muted py-20">載入失敗</div>
         ) : (
           <>
             {/* KPI Stats Row */}
@@ -181,10 +181,10 @@ export default function DashboardPage() {
                 { label: '本週完成', value: data.weekCompleted, color: '#4ade80', icon: <CheckCircle size={14} /> },
                 { label: '完成率', value: `${data.completionRate}%`, color: '#c084fc', icon: <TrendingUp size={14} /> },
               ].map(item => (
-                <Link key={item.label} href="/board" className="group rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-5 hover:border-slate-600/80 hover:bg-slate-800/60 hover:brightness-110 transition-all duration-300 block">
+                <Link key={item.label} href="/board" className="group rounded-xl border border-border bg-card backdrop-blur-sm p-5 hover:border-border-strong hover:brightness-110 transition-all duration-300 block">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-gray-400">{item.icon}</span>
-                    <span className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">{item.label}</span>
+                    <span className="text-foreground-muted">{item.icon}</span>
+                    <span className="text-[11px] text-foreground-muted uppercase tracking-wider font-medium">{item.label}</span>
                   </div>
                   <div className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight" style={{ color: item.color }}>
                     {item.value}
@@ -195,7 +195,7 @@ export default function DashboardPage() {
 
             {/* Agent Cards */}
             <section className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground-muted uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Users size={14} /> Agent 狀態總覽
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -218,8 +218,8 @@ export default function DashboardPage() {
                             {icon}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-200 text-sm">{agent.name}</div>
-                            <div className="text-[10px] text-gray-600">{agent.role}</div>
+                            <div className="font-semibold text-foreground text-sm">{agent.name}</div>
+                            <div className="text-[10px] text-foreground-subtle">{agent.role}</div>
                           </div>
                         </div>
                         {/* Status light */}
@@ -236,32 +236,32 @@ export default function DashboardPage() {
 
                       {/* Current task */}
                       {agent.currentTask && (
-                        <div className="mb-3 px-2.5 py-1.5 rounded-md bg-slate-800/60 border border-slate-700/40">
-                          <div className="text-[10px] text-gray-500 mb-0.5">執行中</div>
-                          <div className="text-xs text-gray-300 truncate">{agent.currentTask}</div>
+                        <div className="mb-3 px-2.5 py-1.5 rounded-md bg-background-elevated border border-border">
+                          <div className="text-[10px] text-foreground-muted mb-0.5">執行中</div>
+                          <div className="text-xs text-foreground truncate">{agent.currentTask}</div>
                         </div>
                       )}
 
                       {/* Stats */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <div className="text-[10px] text-gray-600 mb-0.5">今日完成</div>
+                          <div className="text-[10px] text-foreground-subtle mb-0.5">今日完成</div>
                           <div className="text-xl font-bold" style={{ color }}>{agent.todayCompleted}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-gray-600 mb-0.5">總完成</div>
-                          <div className="text-xl font-bold text-gray-300">{agent.completed}</div>
+                          <div className="text-[10px] text-foreground-subtle mb-0.5">總完成</div>
+                          <div className="text-xl font-bold text-foreground">{agent.completed}</div>
                         </div>
                       </div>
 
                       {/* Progress bar */}
-                      <div className="mt-3 h-1 bg-slate-800 rounded-full overflow-hidden">
+                      <div className="mt-3 h-1 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${agent.successRate}%`, background: `linear-gradient(90deg, ${color}, ${color}99)` }}
                         />
                       </div>
-                      <div className="text-[10px] text-gray-600 mt-1 text-right">{agent.successRate}% 完成率</div>
+                      <div className="text-[10px] text-foreground-subtle mt-1 text-right">{agent.successRate}% 完成率</div>
                     </div>
                   )
                 })}
@@ -271,15 +271,15 @@ export default function DashboardPage() {
             {/* Chart + Activity Feed */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
               {/* Doughnut Chart */}
-              <div className="lg:col-span-2 rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-6">
-                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="lg:col-span-2 rounded-xl border border-border bg-card backdrop-blur-sm p-6">
+                <h2 className="text-sm font-semibold text-foreground-muted uppercase tracking-wider mb-4 flex items-center gap-2">
                   <PieChart size={14} /> 任務分布
                 </h2>
                 <div className="h-[260px] flex items-center justify-center">
                   {chartData && <Doughnut data={chartData} options={chartOptions} />}
                 </div>
                 {/* Inline stats */}
-                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-700/40">
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
                   {[
                     { label: '待執行', value: data.statusCounts['待執行'] || 0, color: '#facc15' },
                     { label: '執行中', value: data.statusCounts['執行中'] || 0, color: '#60a5fa' },
@@ -287,20 +287,20 @@ export default function DashboardPage() {
                   ].map(s => (
                     <div key={s.label} className="text-center">
                       <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">{s.label}</div>
+                      <div className="text-[10px] text-foreground-muted mt-0.5">{s.label}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Activity Feed */}
-              <div className="lg:col-span-3 rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-6">
-                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <div className="lg:col-span-3 rounded-xl border border-border bg-card backdrop-blur-sm p-6">
+                <h2 className="text-sm font-semibold text-foreground-muted uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Clock size={14} /> 最近完成任務
                 </h2>
                 <div className="space-y-1">
                   {data.recentCompleted.length === 0 ? (
-                    <div className="text-gray-600 text-sm py-8 text-center">暫無已完成任務</div>
+                    <div className="text-foreground-subtle text-sm py-8 text-center">暫無已完成任務</div>
                   ) : (
                     data.recentCompleted.map((task, i) => {
                       const color = getAgentColor(task.assignee)
@@ -313,19 +313,19 @@ export default function DashboardPage() {
                           <div className="flex flex-col items-center self-stretch">
                             <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: color }} />
                             {i < data.recentCompleted.length - 1 && (
-                              <div className="w-px flex-1 bg-slate-700/60 mt-1" />
+                              <div className="w-px flex-1 bg-border mt-1" />
                             )}
                           </div>
                           {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm text-gray-200 truncate group-hover:text-white transition-colors">
+                            <div className="text-sm text-foreground truncate group-hover:brightness-110 transition-colors">
                               #{task.id} {task.title}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ color, background: `${color}15` }}>
                                 {task.assignee}
                               </span>
-                              <span className="text-[10px] text-gray-600">{timeAgo(task.completedAt)}</span>
+                              <span className="text-[10px] text-foreground-subtle">{timeAgo(task.completedAt)}</span>
                             </div>
                           </div>
                           {/* Check */}
@@ -340,7 +340,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        <footer className="mt-8 text-center text-gray-700 text-xs tracking-wide">
+        <footer className="mt-8 text-center text-foreground-subtle text-xs tracking-wide">
           William Hub — Clawd Dashboard · © 2026
         </footer>
       </div>

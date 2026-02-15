@@ -121,7 +121,7 @@ function ReportCard({
       style={{ borderTop: 'none', borderRight: 'none', borderBottom: 'none' }}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <span className="text-[15px] font-semibold text-gray-200 truncate flex-1">
+        <span className="text-[15px] font-semibold text-foreground truncate flex-1">
           {report.title}
         </span>
         <span
@@ -131,7 +131,7 @@ function ReportCard({
           {report.type}
         </span>
       </div>
-      <div className="flex items-center gap-2 text-[13px] text-gray-500 mb-1">
+      <div className="flex items-center gap-2 text-[13px] text-foreground-muted mb-1">
         <User size={12} />
         <span>{report.author}</span>
         <Calendar size={12} className="ml-1" />
@@ -152,8 +152,8 @@ function ReportCard({
           </>
         ) : (
           <>
-            <span className="w-2 h-2 rounded-full bg-gray-600 inline-block" />
-            <span className="text-gray-600">No export</span>
+            <span className="w-2 h-2 rounded-full bg-foreground-disabled inline-block" />
+            <span className="text-foreground-subtle">No export</span>
           </>
         )}
       </div>
@@ -219,7 +219,7 @@ export default function ReportsPage() {
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
               filter === f.value
                 ? 'bg-blue-500 text-white shadow-[0_0_8px_rgba(59,130,246,0.4)]'
-                : 'bg-white/[0.08] border border-white/[0.12] text-gray-400 hover:bg-white/[0.12]'
+                : 'bg-muted border border-border text-foreground-muted hover:bg-accent'
             }`}
           >
             <Filter size={10} className="inline mr-1" />
@@ -231,12 +231,12 @@ export default function ReportsPage() {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-gray-500">
+          <div className="flex items-center justify-center py-12 text-foreground-muted">
             <Loader2 size={20} className="animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-600 text-sm">
-            <FileText size={32} className="mx-auto mb-3 text-gray-700" />
+          <div className="text-center py-12 text-foreground-muted text-sm">
+            <FileText size={32} className="mx-auto mb-3 text-foreground-subtle" />
             No reports
           </div>
         ) : (
@@ -263,10 +263,10 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-100 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
               {selectedReport.title}
             </h1>
-            <div className="flex items-center gap-3 text-sm text-gray-500">
+            <div className="flex items-center gap-3 text-sm text-foreground-muted">
               <span className="flex items-center gap-1"><User size={14} /> {selectedReport.author}</span>
               <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(selectedReport.date).toLocaleDateString('zh-TW')}</span>
             </div>
@@ -286,9 +286,9 @@ export default function ReportsPage() {
       </div>
     </div>
   ) : (
-    <div className="h-full flex items-center justify-center text-gray-600">
+    <div className="h-full flex items-center justify-center text-foreground-muted">
       <div className="text-center">
-        <FileText size={48} className="mx-auto mb-4 text-gray-700" />
+        <FileText size={48} className="mx-auto mb-4 text-foreground-subtle" />
         <p className="text-sm">Select a report</p>
       </div>
     </div>
@@ -296,25 +296,25 @@ export default function ReportsPage() {
 
   const contentWithLoading = contentLoading ? (
     <div className="h-full flex items-center justify-center">
-      <Loader2 size={24} className="animate-spin text-gray-500" />
+      <Loader2 size={24} className="animate-spin text-foreground-muted" />
     </div>
   ) : content
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-background">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800/60 shrink-0">
-        <a href="/" className="text-gray-500 hover:text-gray-300 transition-colors">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
+        <a href="/" className="text-foreground-muted hover:text-foreground transition-colors">
           <ArrowLeft size={18} />
         </a>
         <FileText size={18} className="text-blue-400" />
-        <h1 className="text-sm font-semibold text-gray-200">Reports</h1>
+        <h1 className="text-sm font-semibold text-foreground">Reports</h1>
       </div>
 
       {/* Desktop layout */}
       <div className="flex-1 overflow-hidden hidden md:flex">
         {/* Sidebar */}
-        <div className="w-[320px] border-r border-gray-800/60 shrink-0 bg-gray-900/30">
+        <div className="w-[320px] border-r border-border shrink-0 bg-background-subtle">
           {sidebar}
         </div>
         {/* Content */}

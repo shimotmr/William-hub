@@ -96,11 +96,11 @@ export default function AgentsPage() {
   const workingCount = agents.filter(a => a.currentTask).length
 
   return (
-    <main className="min-h-screen bg-[#080a0f]">
+    <main className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <header className="mb-8">
-          <a href="/" className="text-gray-500 text-sm hover:text-gray-300 transition mb-3 inline-flex items-center gap-1.5">
+          <a href="/" className="text-foreground-muted text-sm hover:text-foreground transition mb-3 inline-flex items-center gap-1.5">
             <ArrowLeft size={14} />
             William Hub
           </a>
@@ -110,9 +110,9 @@ export default function AgentsPage() {
                 <Monitor size={20} className="text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-100">Agent Control Center</h1>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Agent Control Center</h1>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <span className="text-xs text-foreground-muted flex items-center gap-1">
                     <Users size={10} />
                     {agents.length} Agents
                   </span>
@@ -135,7 +135,7 @@ export default function AgentsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={24} className="animate-spin text-gray-500" />
+            <Loader2 size={24} className="animate-spin text-foreground-muted" />
           </div>
         )}
 
@@ -189,7 +189,7 @@ export default function AgentsPage() {
                     )}
 
                     {/* Current Task or Role */}
-                    <div className="text-[11px] text-gray-600 flex items-center gap-1.5">
+                    <div className="text-[11px] text-foreground-subtle flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                         isOff ? 'bg-gray-700' : agent.currentTask ? 'bg-blue-500/60' : 'bg-emerald-500/40'
                       }`} />
@@ -200,7 +200,7 @@ export default function AgentsPage() {
 
                     {/* Last active */}
                     {agent.last_run_at && (
-                      <div className="text-[9px] text-gray-700 mt-1.5">{timeAgo(agent.last_run_at)}</div>
+                      <div className="text-[9px] text-foreground-disabled mt-1.5">{timeAgo(agent.last_run_at)}</div>
                     )}
                   </button>
                 )
@@ -225,16 +225,16 @@ export default function AgentsPage() {
                   />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-200 flex items-center gap-2">
+                  <div className="font-semibold text-foreground flex items-center gap-2">
                     <span style={{ color: selected.color }}>{getIcon(selected.emoji, 14)}</span>
                     {selected.name}
-                    <span className="text-xs font-mono text-gray-600">{selected.prefix}</span>
+                    <span className="text-xs font-mono text-foreground-subtle">{selected.prefix}</span>
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">{selected.title}</div>
-                  <div className="text-[11px] text-gray-600 mt-0.5">{selected.role}</div>
+                  <div className="text-xs text-foreground-muted mt-0.5">{selected.title}</div>
+                  <div className="text-[11px] text-foreground-subtle mt-0.5">{selected.role}</div>
                 </div>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-gray-300 transition p-1">
+              <button onClick={() => setSelected(null)} className="text-foreground-subtle hover:text-foreground transition p-1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -243,7 +243,7 @@ export default function AgentsPage() {
 
             {/* Description */}
             {selected.description && (
-              <p className="text-sm text-gray-400 mb-4 leading-relaxed">{selected.description}</p>
+              <p className="text-sm text-foreground-muted mb-4 leading-relaxed">{selected.description}</p>
             )}
 
             {/* Skills */}
@@ -263,14 +263,14 @@ export default function AgentsPage() {
                 style={{ background: `${selected.color}06`, border: `1px solid ${selected.color}15` }}
                 onClick={() => handleSelect(selected)}
               >
-                <div className="text-sm text-gray-300 leading-relaxed">
+                <div className="text-sm text-foreground leading-relaxed">
                   「{selected.quotes[quoteIdx]}」
                 </div>
-                <div className="text-[10px] text-gray-600 mt-2 flex items-center gap-2">
+                <div className="text-[10px] text-foreground-subtle mt-2 flex items-center gap-2">
                   點擊切換台詞
                   <span className="flex gap-1">
                     {selected.quotes.map((_, i) => (
-                      <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === quoteIdx ? 'bg-gray-400' : 'bg-gray-700'}`} />
+                      <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === quoteIdx ? 'bg-foreground-muted' : 'bg-foreground-disabled'}`} />
                     ))}
                   </span>
                 </div>
@@ -278,24 +278,24 @@ export default function AgentsPage() {
             )}
 
             {/* Status bar */}
-            <div className="mt-3 pt-3 border-t border-gray-800/50 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <span className={`w-2 h-2 rounded-full ${selected.status === 'active' ? 'bg-emerald-400' : 'bg-gray-600'}`} />
-              <span className="text-gray-500">{selected.model_primary}</span>
-              <span className="text-gray-700">·</span>
-              <span className={selected.currentTask ? 'text-blue-400' : 'text-gray-500'}>
+            <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span className={`w-2 h-2 rounded-full ${selected.status === 'active' ? 'bg-emerald-400' : 'bg-foreground-disabled'}`} />
+              <span className="text-foreground-muted">{selected.model_primary}</span>
+              <span className="text-foreground-disabled">·</span>
+              <span className={selected.currentTask ? 'text-blue-400' : 'text-foreground-muted'}>
                 {selected.currentTask || '待命中'}
               </span>
               {selected.last_run_at && (
                 <>
-                  <span className="text-gray-700">·</span>
-                  <span className="text-gray-600">{timeAgo(selected.last_run_at)}</span>
+                  <span className="text-foreground-disabled">·</span>
+                  <span className="text-foreground-subtle">{timeAgo(selected.last_run_at)}</span>
                 </>
               )}
             </div>
 
             {/* Last status */}
             {selected.last_status && (
-              <div className="mt-2 text-[10px] text-gray-600 truncate">
+              <div className="mt-2 text-[10px] text-foreground-subtle truncate">
                 {selected.last_status}
               </div>
             )}
@@ -304,15 +304,15 @@ export default function AgentsPage() {
 
         {/* Workflows */}
         <section className="mb-8">
-          <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <h2 className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <Zap size={12} />
             Workflows
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {workflows.map((w) => (
-              <div key={w.name} className="rounded-xl border border-gray-800/50 bg-gray-900/30 p-4">
+              <div key={w.name} className="rounded-xl border border-border bg-card p-4">
                 <div className="text-sm font-semibold mb-3" style={{ color: w.color }}>{w.name}</div>
-                <div className="flex items-center flex-wrap gap-1.5 text-xs text-gray-400 mb-2">
+                <div className="flex items-center flex-wrap gap-1.5 text-xs text-foreground-muted mb-2">
                   {w.flow.map((name, i) => {
                     const agent = agents.find(a => a.name === name)
                     return (
@@ -327,14 +327,14 @@ export default function AgentsPage() {
                     )
                   })}
                 </div>
-                <div className="text-[11px] text-gray-600">{w.desc}</div>
+                <div className="text-[11px] text-foreground-subtle">{w.desc}</div>
               </div>
             ))}
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="text-center text-[11px] text-gray-700 py-4">
+        <footer className="text-center text-[11px] text-foreground-subtle py-4">
           Agent Control Center v2 · Powered by Supabase
         </footer>
       </div>

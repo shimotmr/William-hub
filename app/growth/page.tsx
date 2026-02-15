@@ -47,12 +47,12 @@ export default function GrowthPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#090b10] text-gray-100 p-8">
+      <main className="min-h-screen bg-background text-foreground p-8">
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-800 rounded w-48 mb-2" />
-            <div className="h-4 bg-gray-800 rounded w-64 mb-8" />
-            <div className="h-96 bg-gray-800 rounded" />
+            <div className="h-8 bg-muted rounded w-48 mb-2" />
+            <div className="h-4 bg-muted rounded w-64 mb-8" />
+            <div className="h-96 bg-muted rounded" />
           </div>
         </div>
       </main>
@@ -61,9 +61,9 @@ export default function GrowthPage() {
 
   if (error || !data) {
     return (
-      <main className="min-h-screen bg-[#090b10] text-gray-100 p-8">
+      <main className="min-h-screen bg-background text-foreground p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="flex flex-col items-center justify-center h-96 text-foreground-muted">
             <TrendingUp className="w-12 h-12 mb-2" />
             <p>{error || '無法載入資料'}</p>
           </div>
@@ -73,19 +73,19 @@ export default function GrowthPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#090b10] text-gray-100 p-8">
+    <main className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="w-8 h-8 text-blue-400" />
-            <h1 className="text-3xl font-bold">Growth Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">Growth Dashboard</h1>
           </div>
-          <p className="text-gray-400">系統與團隊成長趨勢分析</p>
+          <p className="text-foreground-muted">系統與團隊成長趨勢分析</p>
         </div>
 
         {/* Task Completion Trend Card */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900/40 backdrop-blur-sm p-6 mb-6">
+        <div className="rounded-xl border border-border bg-card backdrop-blur-sm p-6 mb-6">
           {/* Card Header */}
           <div className="flex items-center gap-2 mb-6">
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -94,17 +94,17 @@ export default function GrowthPage() {
 
           {/* Summary Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">總完成數</div>
-              <div className="text-2xl font-bold text-gray-100">{data.summary.total}</div>
+            <div className="bg-background-elevated rounded-lg p-4">
+              <div className="text-sm text-foreground-muted mb-1">總完成數</div>
+              <div className="text-2xl font-bold text-foreground">{data.summary.total}</div>
             </div>
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">平均每日</div>
-              <div className="text-2xl font-bold text-gray-100">{data.summary.avgPerDay}</div>
+            <div className="bg-background-elevated rounded-lg p-4">
+              <div className="text-sm text-foreground-muted mb-1">平均每日</div>
+              <div className="text-2xl font-bold text-foreground">{data.summary.avgPerDay}</div>
             </div>
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="text-sm text-gray-400 mb-1">期間</div>
-              <div className="text-2xl font-bold text-gray-100">30 天</div>
+            <div className="bg-background-elevated rounded-lg p-4">
+              <div className="text-sm text-foreground-muted mb-1">期間</div>
+              <div className="text-2xl font-bold text-foreground">30 天</div>
             </div>
           </div>
 

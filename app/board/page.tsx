@@ -316,9 +316,9 @@ export default function BoardPage() {
   const williamTasks = tasks.filter((t) => t.board === 'william')
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
+    <main className="min-h-screen bg-background relative overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-blue-500/[0.04] rounded-full blur-[100px]" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-5 py-12 sm:py-20">
@@ -333,23 +333,23 @@ export default function BoardPage() {
                 W
               </Link>
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Task Board</h1>
-                <p className="text-gray-500 text-xs sm:text-sm">任務看板</p>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Task Board</h1>
+                <p className="text-foreground-muted text-xs sm:text-sm">任務看板</p>
               </div>
             </div>
-            <Link href="/" className="text-xs sm:text-sm text-gray-500 hover:text-gray-300 transition-colors">
+            <Link href="/" className="text-xs sm:text-sm text-foreground-muted hover:text-foreground transition-colors">
               ← Back to Hub
             </Link>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-gray-900/50 rounded-lg w-fit border border-gray-800/50">
+          <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit border border-border">
             <button
               onClick={() => setTab('active')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 tab === 'active'
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                  : 'text-foreground-muted hover:text-foreground border border-transparent'
               }`}
             >
               進行中 ({tasks.length})
@@ -369,7 +369,7 @@ export default function BoardPage() {
 
         {/* Board */}
         {loading ? (
-          <div className="text-center text-gray-500 py-20">Loading...</div>
+          <div className="text-center text-foreground-muted py-20">Loading...</div>
         ) : tab === 'active' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BoardColumn
@@ -396,7 +396,7 @@ export default function BoardPage() {
         )}
 
         {/* Footer */}
-        <footer className="mt-14 text-center text-gray-700 text-xs tracking-wide">
+<footer className="mt-14 text-center text-foreground-subtle text-xs tracking-wide">
           William Hub v2 — Board
         </footer>
       </div>
