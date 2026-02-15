@@ -5,6 +5,8 @@
 
 import { useState, useEffect } from 'react'
 
+import { ThemeToggle } from './components/ThemeToggle'
+
 const agentsList = [
   { name: 'Travis', status: 'ok' as const },
   { name: 'Inspector', status: 'ok' as const },
@@ -97,6 +99,15 @@ const apps = [
     accentBg: 'rgba(168,85,247,0.08)',
     borderColor: 'rgba(168,85,247,0.25)',
     disabled: true,
+  },
+  {
+    name: 'Growth',
+    desc: '系統與團隊成長趨勢分析',
+    url: '/growth',
+    tag: 'LIVE',
+    accent: '#14b8a6',
+    accentBg: 'rgba(20,184,166,0.08)',
+    borderColor: 'rgba(20,184,166,0.25)',
   },
 ]
 
@@ -192,6 +203,15 @@ function IconReports({ color }: { color: string }) {
   )
 }
 
+function IconGrowth({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Dashboard': IconDashboard,
   'Aurotek Portal': IconAurotek,
@@ -200,6 +220,7 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Trading System': IconTrading,
   'Reports': IconReports,
   'Travis': IconTravis,
+  'Growth': IconGrowth,
 }
 
 // --- Helpers ---
@@ -260,11 +281,14 @@ export default function Home() {
       <div className="relative z-10 max-w-4xl mx-auto px-5 py-12 sm:py-20">
         {/* Header */}
         <header className="mb-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white">
-              W
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white">
+                W
+              </div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">William Hub</h1>
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">William Hub</h1>
+            <ThemeToggle />
           </div>
           <p className="text-gray-500 text-sm ml-12">Command Center</p>
         </header>
