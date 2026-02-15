@@ -7,3 +7,32 @@
 body {
   font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
 }
+
+/* highlight.js dark theme */
+@import 'highlight.js/styles/github-dark.css';
+
+/* Markdown prose dark */
+.prose-dark {
+  color: #d4d4d4;
+  line-height: 1.75;
+  font-size: 16px;
+}
+.prose-dark h1 { font-size: 32px; font-weight: 700; margin-bottom: 24px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px; color: #e5e5e5; }
+.prose-dark h2 { font-size: 24px; font-weight: 600; margin-top: 36px; margin-bottom: 16px; color: #e5e5e5; }
+.prose-dark h3 { font-size: 20px; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color: #a0a0a0; }
+.prose-dark p { margin-bottom: 16px; }
+.prose-dark a { color: #60a5fa; text-decoration: none; transition: all 200ms; }
+.prose-dark a:hover { text-decoration: underline; }
+.prose-dark ul, .prose-dark ol { padding-left: 24px; margin-bottom: 16px; }
+.prose-dark li { margin-bottom: 8px; }
+.prose-dark li::marker { color: #3b82f6; }
+.prose-dark blockquote { border-left: 4px solid #6366f1; background: rgba(99,102,241,0.08); padding: 12px 20px; font-style: italic; margin: 16px 0; border-radius: 0 6px 6px 0; }
+.prose-dark table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+.prose-dark thead th { background: rgba(59,130,246,0.1); font-weight: 600; text-align: left; padding: 12px 16px; border-bottom: 2px solid rgba(255,255,255,0.1); }
+.prose-dark tbody td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.prose-dark tbody tr:hover { background: rgba(255,255,255,0.05); }
+.prose-dark pre { background: #1e1e1e; border-left: 3px solid #3b82f6; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 16px 0; }
+.prose-dark code { font-family: 'Fira Code', monospace; font-size: 14px; }
+.prose-dark :not(pre) > code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+.prose-dark hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 24px 0; }
+.prose-dark img { max-width: 100%; border-radius: 8px; }
