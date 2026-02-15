@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dashboard API Response Schema",
+  "type": "object",
+  "required": [
+    "statusCounts",
+    "totalTasks",
+    "weekCompleted",
+    "completionRate",
+    "agents",
+    "recentCompleted"
+  ],
+  "properties": {
+    "statusCounts": {
+      "type": "object",
+      "required": ["待執行", "執行中", "已完成"],
+      "properties": {
+        "待執行": { "type": "number" },
+        "執行中": { "type": "number" },
+        "已完成": { "type": "number" }
+      }
+    },
+    "totalTasks": {
+      "type": "number",
+      "minimum": 0
+    },
+    "weekCompleted": {
+      "type": "number",
+      "minimum": 0
+    },
+    "completionRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "role",
+          "total",
+          "completed",
+          "todayCompleted",
+          "successRate",
+          "isActive"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "total": { "type": "number", "minimum": 0 },
+          "completed": { "type": "number", "minimum": 0 },
+          "todayCompleted": { "type": "number", "minimum": 0 },
+          "successRate": { "type": "number", "minimum": 0, "maximum": 100 },
+          "currentTask": { "type": ["string", "null"] },
+          "isActive": { "type": "boolean" }
+        }
+      }
+    },
+    "recentCompleted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "completedAt", "assignee"],
+        "properties": {
+          "id": { "type": "number" },
+          "title": { "type": "string" },
+          "completedAt": { "type": "string" },
+          "assignee": { "type": "string" }
+        }
+      }
+    }
+  }
+}
