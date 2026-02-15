@@ -16,20 +16,13 @@ import {
   HelpCircle,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 
 // ─── Types ───────────────────────────────────────────────────
 type FaqItem = {
   patterns: string[]
   answer: string
   category: string
-}
-
-type KnowledgeChunk = {
-  id: number
-  title: string
-  source: string
-  content: string
 }
 
 type TestCase = {
@@ -58,17 +51,6 @@ const faqData: FaqItem[] = [
   { patterns: ['機器人不動了', '突然不動', '停住了', '不會動'], answer: '請依序檢查：1. 電量是否充足 2. 是否被障礙物卡住 3. 查看錯誤提示 4. 長按電源鍵重啟。', category: '故障排除' },
   { patterns: ['充電座找不到', '回不了充電座'], answer: '請確認：1. 充電座位置是否移動 2. 感應器是否乾淨 3. 充電座周圍是否淨空。', category: '故障排除' },
   { patterns: ['吸力變弱', '吸力不足', '吸力下降'], answer: '請檢查：1. 塵盒是否已滿 2. 濾網是否堵塞 3. 滾刷是否纏繞異物。清理後通常可恢復。', category: '故障排除' },
-]
-
-const knowledgeChunks: KnowledgeChunk[] = [
-  { id: 1, title: 'CC1 產品規格', source: 'product-specs.md', content: 'CC1 掃地機器人：吸力 2500Pa、續航 120 分鐘、噪音 65dB、塵盒 0.5L。適合小套房與一般家庭使用。' },
-  { id: 2, title: 'CC1 Pro 產品規格', source: 'product-specs.md', content: 'CC1 Pro 掃地機器人：吸力 3000Pa、續航 150 分鐘、噪音 60dB、塵盒 0.6L。升級版吸力更強、續航更久。' },
-  { id: 3, title: 'CC2 產品規格', source: 'product-specs.md', content: 'CC2 掃拖一體機器人：吸力 3500Pa、續航 180 分鐘、支援 WiFi App 控制、自動集塵站。' },
-  { id: 4, title: 'MT1 拖地機規格', source: 'product-specs.md', content: 'MT1 智能拖地機器人：水箱 300ml、拖地面積約 150 平米、超聲波震動拖布。' },
-  { id: 5, title: 'MT2 拖地機規格', source: 'product-specs.md', content: 'MT2 智能拖地機器人：支援自動補水、雙旋轉拖布、水箱 450ml。' },
-  { id: 6, title: '耗材更換指南', source: 'maintenance-guide.md', content: '滾刷 6-12 個月、拖布 3-6 個月、集塵袋 1-2 個月、濾網 6 個月。定期清洗可延長壽命。' },
-  { id: 7, title: '故障排除手冊', source: 'troubleshooting.md', content: '常見問題：不動（檢查電量/卡住/重啟）、吸力弱（塵盒/濾網/滾刷）、充電失敗（接點清潔/電源）。' },
-  { id: 8, title: '政治敏感回應策略', source: 'safety-rules.md', content: '遇到政治相關問題時，幽默帶過不表態，將話題拉回產品相關領域。' },
 ]
 
 const testCases: TestCase[] = [
@@ -188,32 +170,87 @@ function FaqTab({ search }: { search: string }) {
   )
 }
 
+// ─── Knowledge Result type ───────────────────────────────────
+type KnowledgeResult = {
+  title: string
+  spec: string
+  source: string
+  product_types: string
+  list_price: number | null
+  dealer_price: number | null
+  total_qty: number | null
+}
+
 // ─── Knowledge Tab ───────────────────────────────────────────
 function KnowledgeTab({ search }: { search: string }) {
-  const filtered = useMemo(() => {
-    if (!search) return knowledgeChunks
-    const q = search.toLowerCase()
-    return knowledgeChunks.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.source.toLowerCase().includes(q) ||
-        c.content.toLowerCase().includes(q)
+  const [results, setResults] = useState<KnowledgeResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  const fetchResults = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setResults([])
+      setSearched(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/knowledge/search?q=${encodeURIComponent(query.trim())}`)
+      if (res.ok) {
+        const data = await res.json()
+        setResults(Array.isArray(data) ? data : [])
+      } else {
+        setResults([])
+      }
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+      setSearched(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchResults(search)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search, fetchResults])
+
+  if (!search.trim() && !searched) {
+    return (
+      <p className="text-center text-gray-500 py-8 text-sm">輸入關鍵字搜尋產品知識庫</p>
     )
-  }, [search])
+  }
+
+  if (loading) {
+    return (
+      <p className="text-center text-gray-500 py-8 text-sm">搜尋中...</p>
+    )
+  }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {filtered.map((chunk) => (
-        <div key={chunk.id} className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
+      {results.map((item, idx) => (
+        <div key={idx} className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
           <div className="flex items-center gap-2 mb-2">
             <FileText size={14} className="text-cyan-400" />
-            <span className="font-medium text-sm">{chunk.title}</span>
+            <span className="font-medium text-sm">{item.title}</span>
           </div>
-          <p className="text-xs text-gray-500 mb-2">{chunk.source}</p>
-          <p className="text-sm text-gray-400 line-clamp-3">{chunk.content}</p>
+          {item.product_types && (
+            <p className="text-xs text-gray-500 mb-1">{item.product_types}</p>
+          )}
+          {item.spec && (
+            <p className="text-sm text-gray-400 line-clamp-3 mb-2">{item.spec}</p>
+          )}
+          <div className="flex gap-3 text-xs text-gray-500">
+            {item.list_price != null && <span>牌價: {item.list_price.toLocaleString()}</span>}
+            {item.dealer_price != null && <span>經銷價: {item.dealer_price.toLocaleString()}</span>}
+            {item.total_qty != null && <span>庫存: {item.total_qty}</span>}
+          </div>
         </div>
       ))}
-      {filtered.length === 0 && (
+      {results.length === 0 && searched && (
         <p className="text-center text-gray-500 py-8 text-sm col-span-2">沒有符合的結果</p>
       )}
     </div>
