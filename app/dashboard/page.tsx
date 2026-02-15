@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 { label: '本週完成', value: data.weekCompleted, color: '#4ade80', icon: <CheckCircle size={14} /> },
                 { label: '完成率', value: `${data.completionRate}%`, color: '#c084fc', icon: <TrendingUp size={14} /> },
               ].map(item => (
-                <div key={item.label} className="group rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-5 hover:border-slate-600/80 hover:bg-slate-800/60 transition-all duration-300">
+                <Link key={item.label} href="/board" className="group rounded-xl border border-slate-700/60 bg-slate-800/40 backdrop-blur-sm p-5 hover:border-slate-600/80 hover:bg-slate-800/60 hover:brightness-110 transition-all duration-300 block">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-gray-400">{item.icon}</span>
                     <span className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">{item.label}</span>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
                   <div className="text-3xl sm:text-4xl font-bold tabular-nums tracking-tight" style={{ color: item.color }}>
                     {item.value}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 

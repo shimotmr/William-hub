@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 
 type Task = {
   id: number
@@ -131,13 +132,14 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
   const hasResult = !!task.result?.trim()
   const hasCriteria = !!task.acceptance_criteria?.trim()
   const expandable = hasDesc || hasResult || hasCriteria
+  const isStale = task.status === '待執行' && (Date.now() - new Date(task.created_at).getTime()) > 7 * 86400000
 
   return (
     <div
       className={`group rounded-xl border p-4 transition-all duration-200 ${isHistory ? 'opacity-70' : ''} ${expandable ? 'cursor-pointer' : ''}`}
       style={{
-        borderColor: expanded ? 'rgba(55, 65, 81, 0.7)' : 'rgba(31, 41, 55, 0.5)',
-        background: expanded ? 'rgba(17, 24, 39, 0.5)' : 'rgba(17, 24, 39, 0.3)',
+        borderColor: isStale ? 'rgba(239, 68, 68, 0.45)' : expanded ? 'rgba(55, 65, 81, 0.7)' : 'rgba(31, 41, 55, 0.5)',
+        background: isStale ? 'rgba(239, 68, 68, 0.06)' : expanded ? 'rgba(17, 24, 39, 0.5)' : 'rgba(17, 24, 39, 0.3)',
       }}
       onClick={() => expandable && setExpanded(!expanded)}
       onMouseEnter={(e) => {
@@ -227,13 +229,17 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
             <circle cx="12" cy="7" r="4" />
           </svg>
           <span>{task.assignee}</span>
+          {isStale && <AlertTriangle size={12} className="text-red-400 ml-1" />}
         </div>
-        {isHistory && task.completed_at && (
-          <div className="flex items-center gap-1 text-[10px] text-emerald-500/70">
-            <IconCheck color="#10b981" />
-            <span>{formatDate(task.completed_at)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-600">{formatDate(task.created_at)}</span>
+          {isHistory && task.completed_at && (
+            <div className="flex items-center gap-1 text-[10px] text-emerald-500/70">
+              <IconCheck color="#10b981" />
+              <span>{formatDate(task.completed_at)}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
