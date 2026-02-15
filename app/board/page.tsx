@@ -112,6 +112,11 @@ function formatDate(d: string) {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
+function formatDateFull(d: string) {
+  const date = new Date(d)
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
+}
+
 function IconChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -232,7 +237,7 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
           {isStale && <AlertTriangle size={12} className="text-red-400 ml-1" />}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-600">{formatDate(task.created_at)}</span>
+          <span className="text-[10px] text-gray-600" title={formatDateFull(task.created_at)}>{formatDate(task.created_at)}</span>
           {isHistory && task.completed_at && (
             <div className="flex items-center gap-1 text-[10px] text-emerald-500/70">
               <IconCheck color="#10b981" />
