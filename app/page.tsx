@@ -62,6 +62,15 @@ const apps = [
     borderColor: 'rgba(245,158,11,0.25)',
   },
   {
+    name: 'Dashboard',
+    desc: '任務統計 & Agent 狀態總覽',
+    url: '/dashboard',
+    tag: 'LIVE',
+    accent: '#8b5cf6',
+    accentBg: 'rgba(139,92,246,0.08)',
+    borderColor: 'rgba(139,92,246,0.25)',
+  },
+  {
     name: 'Trading System',
     desc: '程式交易 / 策略回測 / 即時監控',
     url: '/trade',
@@ -152,7 +161,19 @@ function IconBoard({ color }: { color: string }) {
   )
 }
 
+function IconDashboard({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="9" rx="1" />
+      <rect x="14" y="3" width="7" height="5" rx="1" />
+      <rect x="14" y="12" width="7" height="9" rx="1" />
+      <rect x="3" y="16" width="7" height="5" rx="1" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
+  'Dashboard': IconDashboard,
   'Aurotek Portal': IconAurotek,
   'Travis Daily': IconTravisDaily,
   'Task Board': IconBoard,
