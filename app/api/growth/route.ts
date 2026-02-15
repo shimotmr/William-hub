@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server'
 
-// Phase 1: 簡化版 API，只提供任務完成趨勢資料
-// 不需要 Supabase client，直接呼叫 Management API
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 interface DailyCount {
   date: string
   count: number
+}
+
+interface ReportTrendData {
+  date: string
+  research?: number
+  review?: number
+  design?: number
+  analysis?: number
+  report?: number
+}
+
+interface Capability {
+  id: number
+  title: string
+  description: string | null
+  category: string
+  added_at: string
 }
 
 interface GrowthData {
@@ -18,6 +32,8 @@ interface GrowthData {
     avgPerDay: number
     cumulative: number[]
   }
+  reportTrend: ReportTrendData[]
+  capabilities: Capability[]
 }
 
 export async function GET() {
@@ -27,24 +43,23 @@ export async function GET() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const startDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-    // 使用 Supabase REST API
-    const url = `${SUPABASE_URL}/rest/v1/board_tasks?select=completed_at&status=eq.已完成&completed_at=gte.${startDate}&order=completed_at.asc`
-    
-    const response = await fetch(url, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    })
-
-    if (!response.ok) {
-      console.error('Supabase API error:', response.status, response.statusText)
-      return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
+    const headers = {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
     }
 
-    const tasks = await response.json()
+    // 查詢任務完成記錄
+    const tasksUrl = `${SUPABASE_URL}/rest/v1/board_tasks?select=completed_at&status=eq.已完成&completed_at=gte.${startDate}&order=completed_at.asc`
+    const tasksResponse = await fetch(tasksUrl, { headers })
 
-    // 按日期聚合
+    if (!tasksResponse.ok) {
+      console.error('Supabase API error (tasks):', tasksResponse.status, tasksResponse.statusText)
+      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+    }
+
+    const tasks = await tasksResponse.json()
+
+    // 按日期聚合任務
     const dailyMap = new Map<string, number>()
     
     for (const task of tasks) {
@@ -71,6 +86,63 @@ export async function GET() {
     const total = trend.reduce((sum, item) => sum + item.count, 0)
     const avgPerDay = total / 30
 
+    // 查詢報告產出記錄
+    const reportsUrl = `${SUPABASE_URL}/rest/v1/reports?select=date,type&date=gte.${startDate}&order=date.asc`
+    const reportsResponse = await fetch(reportsUrl, { headers })
+
+    if (!reportsResponse.ok) {
+      console.error('Supabase API error (reports):', reportsResponse.status, reportsResponse.statusText)
+      return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 })
+    }
+
+    const reports = await reportsResponse.json()
+
+    // 按日期和類型聚合報告
+    const reportDailyMap = new Map<string, Record<string, number>>()
+    
+    for (const report of reports) {
+      if (!report.date || !report.type) continue
+      const date = report.date.split('T')[0]
+      if (!reportDailyMap.has(date)) {
+        reportDailyMap.set(date, {})
+      }
+      const dayData = reportDailyMap.get(date)!
+      dayData[report.type] = (dayData[report.type] || 0) + 1
+    }
+
+    // 填補報告趨勢資料
+    const reportTrend: ReportTrendData[] = []
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const dayData = reportDailyMap.get(dateStr) || {}
+      reportTrend.push({
+        date: dateStr,
+        research: dayData.research || 0,
+        review: dayData.review || 0,
+        design: dayData.design || 0,
+        analysis: dayData.analysis || 0,
+        report: dayData.report || 0,
+      })
+    }
+
+    // 查詢系統能力擴展記錄（從 reports 表篩選，限制最近 10 筆）
+    const capabilitiesUrl = `${SUPABASE_URL}/rest/v1/reports?select=id,title,type,date&or=(title.ilike.%新增%,title.ilike.%整合%,title.ilike.%擴展%,title.ilike.%升級%)&order=date.desc&limit=10`
+    const capabilitiesResponse = await fetch(capabilitiesUrl, { headers })
+
+    let capabilities: Capability[] = []
+    if (capabilitiesResponse.ok) {
+      const capabilityReports = await capabilitiesResponse.json()
+      capabilities = capabilityReports.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        description: null,
+        category: r.type || 'integration',
+        added_at: r.date,
+      }))
+    }
+
     const data: GrowthData = {
       trend,
       summary: {
@@ -78,6 +150,8 @@ export async function GET() {
         avgPerDay: Math.round(avgPerDay * 10) / 10,
         cumulative,
       },
+      reportTrend,
+      capabilities,
     }
 
     return NextResponse.json(data)
