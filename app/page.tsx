@@ -3,9 +3,12 @@
 // ============================================================
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useState, useEffect } from 'react'
 
-import { ThemeToggle } from './components/ThemeToggle'
+const ThemeToggle = dynamic(() => import('./components/ThemeToggle').then(mod => ({ default: mod.ThemeToggle })), {
+  ssr: false,
+})
 
 const agentsList = [
   { name: 'Travis', status: 'ok' as const },
