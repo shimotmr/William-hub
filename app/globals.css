@@ -4,8 +4,124 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap');
 
-body {
-  font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+@layer base {
+  :root {
+    /* ----- 背景色系 ----- */
+    --background: 0 0% 100%;            /* #ffffff 純白 */
+    --background-subtle: 220 14% 98%;   /* #f9fafb 微灰背景 */
+    --background-elevated: 0 0% 100%;   /* #ffffff 白色卡片 */
+    
+    /* ----- 文字色系 ----- */
+    --foreground: 224 71% 4%;           /* #0a0e1a 深色文字 */
+    --foreground-muted: 220 9% 46%;     /* #6b7684 次要文字 */
+    --foreground-subtle: 220 9% 60%;    /* #8a94a6 輔助文字 */
+    --foreground-disabled: 220 9% 70%;  /* #a8b0bc 禁用文字 */
+    
+    /* ----- 卡片與容器 ----- */
+    --card: 0 0% 100%;                  /* #ffffff 白色卡片 */
+    --card-foreground: 224 71% 4%;      /* #0a0e1a 深色文字 */
+    
+    /* ----- 邊框色系 ----- */
+    --border: 220 13% 91%;              /* #e5e7eb 淺灰邊框 */
+    --border-subtle: 220 13% 95%;       /* #f1f3f5 次要邊框 */
+    --border-strong: 220 13% 80%;       /* #c2c8d1 強調邊框 */
+    
+    /* ----- 靜默與強調 ----- */
+    --muted: 220 14% 96%;               /* #f3f4f6 靜默背景 */
+    --muted-foreground: 220 9% 46%;     /* #6b7684 靜默文字 */
+    --accent: 220 14% 96%;              /* #f3f4f6 強調背景 */
+    --accent-foreground: 224 71% 4%;    /* #0a0e1a 強調文字 */
+    
+    /* ----- 品牌色（紫色）----- */
+    --primary: 262 83% 58%;             /* #a855f7 主色調（稍亮）*/
+    --primary-hover: 262 83% 53%;       /* #9333ea hover 狀態 */
+    --primary-active: 262 83% 48%;      /* #7e22ce active 狀態 */
+    --primary-foreground: 0 0% 100%;    /* #ffffff 白色文字 */
+    
+    /* ----- 功能色：成功 ----- */
+    --success: 142 71% 45%;             /* #16a34a 成功綠 */
+    --success-bg: 142 50% 95%;          /* #dcfce7 淺綠背景 */
+    --success-border: 142 50% 70%;      /* #4ade80 綠色邊框 */
+    
+    /* ----- 功能色：警告 ----- */
+    --warning: 38 92% 50%;              /* #f59e0b 警告橘 */
+    --warning-bg: 38 70% 95%;           /* #fef3c7 淺橘背景 */
+    --warning-border: 38 70% 70%;       /* #fbbf24 橘色邊框 */
+    
+    /* ----- 功能色：錯誤 ----- */
+    --error: 0 72% 51%;                 /* #dc2626 錯誤紅 */
+    --error-bg: 0 50% 95%;              /* #fee2e2 淺紅背景 */
+    --error-border: 0 50% 70%;          /* #f87171 紅色邊框 */
+    
+    /* ----- 功能色：資訊 ----- */
+    --info: 217 91% 60%;                /* #3b82f6 資訊藍 */
+    --info-bg: 217 70% 95%;             /* #dbeafe 淺藍背景 */
+    --info-border: 217 70% 70%;         /* #60a5fa 藍色邊框 */
+  }
+
+  .dark {
+    /* ----- 背景色系 ----- */
+    --background: 224 71% 4%;           /* #0a0e1a 深藍黑底 */
+    --background-subtle: 224 50% 6%;    /* #0d1219 微亮背景 */
+    --background-elevated: 224 50% 8%;  /* #101620 卡片/浮動元素 */
+    
+    /* ----- 文字色系 ----- */
+    --foreground: 213 31% 91%;          /* #e3e8ef 主要文字 */
+    --foreground-muted: 218 11% 55%;    /* #7f8b99 次要文字 */
+    --foreground-subtle: 220 9% 46%;    /* #6b7684 輔助文字 */
+    --foreground-disabled: 220 8% 35%;  /* #525a66 禁用文字 */
+    
+    /* ----- 卡片與容器 ----- */
+    --card: 224 50% 8%;                 /* #101620 卡片背景 */
+    --card-foreground: 213 31% 91%;     /* #e3e8ef 卡片文字 */
+    
+    /* ----- 邊框色系 ----- */
+    --border: 216 34% 17%;              /* #1c2432 主要邊框 */
+    --border-subtle: 220 20% 12%;       /* #181d26 次要邊框（更淡）*/
+    --border-strong: 220 30% 25%;       /* #2d3642 強調邊框（更明顯）*/
+    
+    /* ----- 靜默與強調 ----- */
+    --muted: 223 47% 11%;               /* #0f1621 靜默背景 */
+    --muted-foreground: 218 11% 55%;    /* #7f8b99 靜默文字 */
+    --accent: 216 34% 17%;              /* #1c2432 強調背景 */
+    --accent-foreground: 213 31% 91%;   /* #e3e8ef 強調文字 */
+    
+    /* ----- 品牌色（紫色）----- */
+    --primary: 263 70% 50%;             /* #7c3aed 主色調 */
+    --primary-hover: 263 70% 45%;       /* #6d28d9 hover 狀態 */
+    --primary-active: 263 70% 40%;      /* #5b21b6 active 狀態 */
+    --primary-foreground: 0 0% 100%;    /* #ffffff 白色文字 */
+    
+    /* ----- 功能色：成功 ----- */
+    --success: 142 71% 45%;             /* #16a34a 成功綠 */
+    --success-bg: 142 50% 10%;          /* #0a3d1f 成功背景 */
+    --success-border: 142 50% 25%;      /* #15803d 成功邊框 */
+    
+    /* ----- 功能色：警告 ----- */
+    --warning: 38 92% 50%;              /* #f59e0b 警告橘 */
+    --warning-bg: 38 70% 12%;           /* #3d2a0f 警告背景 */
+    --warning-border: 38 70% 30%;       /* #b45309 警告邊框 */
+    
+    /* ----- 功能色：錯誤 ----- */
+    --error: 0 72% 51%;                 /* #dc2626 錯誤紅 */
+    --error-bg: 0 50% 12%;              /* #3d1010 錯誤背景 */
+    --error-border: 0 50% 30%;          /* #991b1b 錯誤邊框 */
+    
+    /* ----- 功能色：資訊 ----- */
+    --info: 217 91% 60%;                /* #3b82f6 資訊藍 */
+    --info-bg: 217 70% 12%;             /* #0f2847 資訊背景 */
+    --info-border: 217 70% 30%;         /* #1e40af 資訊邊框 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  }
 }
 
 /* highlight.js dark theme */
