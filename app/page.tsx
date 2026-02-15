@@ -276,9 +276,9 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
+    <main className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle grid bg */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-blue-500/[0.04] rounded-full blur-[100px]" />
 
       <div className="relative z-10 max-w-4xl mx-auto px-5 py-12 sm:py-20">
@@ -289,24 +289,24 @@ export default function Home() {
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-sm font-bold text-white">
                 W
               </div>
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">William Hub</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">William Hub</h1>
             </div>
             <ThemeToggle />
           </div>
-          <p className="text-gray-500 text-sm ml-12">Command Center</p>
+          <p className="text-foreground-muted text-sm ml-12">Command Center</p>
         </header>
 
         {/* Strategic Panel */}
-        <section className="mb-8 rounded-xl border border-gray-800/60 bg-gray-900/40 backdrop-blur-sm">
+        <section className="mb-8 rounded-xl border border-border bg-card backdrop-blur-sm">
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             {/* Top row: date + agents */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-              <div className="text-sm text-gray-400 font-medium tracking-wide">
+              <div className="text-sm text-foreground-muted font-medium tracking-wide">
                 {getDateStr()}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 {agents.map((a) => (
-                  <div key={a.name} className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <div key={a.name} className="flex items-center gap-1.5 text-xs text-foreground-muted">
                     <StatusDot status={a.status} />
                     <span>{a.name}</span>
                   </div>
@@ -323,8 +323,8 @@ export default function Home() {
                 { label: 'Total', value: tokens.total },
               ].map((item) => (
                 <div key={item.label}>
-                  <div className="text-[11px] text-gray-600 uppercase tracking-wider mb-1">{item.label}</div>
-                  <div className="text-lg sm:text-xl font-semibold text-gray-200 tabular-nums">
+                  <div className="text-[11px] text-foreground-subtle uppercase tracking-wider mb-1">{item.label}</div>
+                  <div className="text-lg sm:text-xl font-semibold text-foreground tabular-nums">
                     {formatNumber(item.value)}
                   </div>
                 </div>
@@ -334,11 +334,11 @@ export default function Home() {
         </section>
 
         {/* Tasks */}
-        <section className="mb-8 rounded-xl border border-gray-800/60 bg-gray-900/40 backdrop-blur-sm">
+        <section className="mb-8 rounded-xl border border-border bg-card backdrop-blur-sm">
           <div className="px-5 py-4 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Tasks</h2>
-              <span className="text-xs text-gray-600">{tasks.filter(t => t.status === 'done').length}/{tasks.length} done</span>
+              <h2 className="text-sm font-medium text-foreground-muted uppercase tracking-wider">Tasks</h2>
+              <span className="text-xs text-foreground-subtle">{tasks.filter(t => t.status === 'done').length}/{tasks.length} done</span>
             </div>
             <div className="space-y-2.5">
               {tasks.map((t) => {
@@ -347,11 +347,11 @@ export default function Home() {
                   <div key={t.id} className={`flex items-start gap-3 text-sm ${t.status === 'done' ? 'opacity-50' : ''}`}>
                     <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0">
-                      <span className={`${t.status === 'done' ? 'line-through text-gray-500' : 'text-gray-300'}`}>
+                      <span className={`${t.status === 'done' ? 'line-through text-foreground-muted' : 'text-foreground'}`}>
                         {t.task}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-600 shrink-0">{t.agent}</span>
+                    <span className="text-xs text-foreground-subtle shrink-0">{t.agent}</span>
                   </div>
                 )
               })}
@@ -392,12 +392,12 @@ export default function Home() {
                 </div>
 
                 {/* Text */}
-                <h2 className="text-base font-semibold text-gray-100 mb-1">{app.name}</h2>
-                <p className="text-sm text-gray-500 leading-relaxed">{app.desc}</p>
+                <h2 className="text-base font-semibold text-foreground mb-1">{app.name}</h2>
+                <p className="text-sm text-foreground-muted leading-relaxed">{app.desc}</p>
 
                 {/* Arrow */}
                 {!app.disabled && (
-                  <div className="absolute bottom-5 right-5 text-gray-600 group-hover:text-gray-300 transition-colors">
+                  <div className="absolute bottom-5 right-5 text-foreground-subtle group-hover:text-foreground transition-colors">
                     <ArrowRight />
                   </div>
                 )}
@@ -414,7 +414,7 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="mt-14 text-center text-gray-700 text-xs tracking-wide">
+        <footer className="mt-14 text-center text-foreground-subtle text-xs tracking-wide">
           William Hub v2
         </footer>
       </div>
