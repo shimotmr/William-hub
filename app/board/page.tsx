@@ -15,6 +15,7 @@ type Task = {
   created_at: string
   updated_at: string
   completed_at: string | null
+  acceptance_criteria: string | null
 }
 
 // SVG Icon Components
@@ -128,7 +129,8 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
   const p = priorityMap[task.priority] || priorityMap['⚪']
   const hasDesc = !!task.description?.trim()
   const hasResult = !!task.result?.trim()
-  const expandable = hasDesc || hasResult
+  const hasCriteria = !!task.acceptance_criteria?.trim()
+  const expandable = hasDesc || hasResult || hasCriteria
 
   return (
     <div
@@ -187,6 +189,25 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
             <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">
               {task.description}
             </p>
+          )}
+          {hasCriteria && (
+            <div className="pt-1.5 border-t border-gray-700/30">
+              <span className="text-[10px] font-medium text-cyan-500/70 uppercase tracking-wider">驗收標準</span>
+              <ul className="mt-1.5 space-y-1">
+                {task.acceptance_criteria!.split('\n').filter(l => l.trim()).map((line, i) => {
+                  const text = line.replace(/^[-*•]\s*/, '').replace(/^\[[ x]?\]\s*/i, '')
+                  const checked = /^\[x\]/i.test(line.trim())
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                      <span className={`mt-0.5 flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center ${checked ? 'border-emerald-500/50 bg-emerald-500/20' : 'border-gray-600'}`}>
+                        {checked && <IconCheck color="#34d399" />}
+                      </span>
+                      <span className={checked ? 'line-through text-gray-500' : ''}>{text}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )}
           {hasResult && (
             <div className="pt-1.5 border-t border-gray-700/30">
