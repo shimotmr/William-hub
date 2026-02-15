@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { Gem, Microscope, Bot, Zap, Brain, ClipboardList, DollarSign, Shield } from 'lucide-react'
 
 // ============================================================
 // Trade Page — William Hub v1.0
@@ -44,12 +45,20 @@ const indices = [
 ]
 
 // --- Mock: Watchlist groups ---
+const groupIcons: Record<string, React.ReactNode> = {
+  core: <Gem size={16} />,
+  semi: <Microscope size={16} />,
+  ai: <Bot size={16} />,
+  daytrade: <Zap size={16} />,
+  'ai-pick': <Brain size={16} />,
+}
+
 const defaultGroups = [
-  { id: 'core', name: '核心持股', icon: '💎' },
-  { id: 'semi', name: '半導體', icon: '🔬' },
-  { id: 'ai', name: 'AI 概念', icon: '🤖' },
-  { id: 'daytrade', name: '當沖標的', icon: '⚡' },
-  { id: 'ai-pick', name: 'AI 選股', icon: '🧠', isAI: true },
+  { id: 'core', name: '核心持股', icon: 'core' },
+  { id: 'semi', name: '半導體', icon: 'semi' },
+  { id: 'ai', name: 'AI 概念', icon: 'ai' },
+  { id: 'daytrade', name: '當沖標的', icon: 'daytrade' },
+  { id: 'ai-pick', name: 'AI 選股', icon: 'ai-pick', isAI: true },
 ]
 
 // --- Mock: Watchlist stocks ---
@@ -281,7 +290,7 @@ export default function TradePage() {
                   borderBottom: activeGroup === g.id ? `2px solid ${g.isAI ? C.warn : C.accent}` : '2px solid transparent',
                 }}
               >
-                {g.icon} {g.name}
+                {groupIcons[g.icon]} {g.name}
               </button>
             ))}
             <div className="flex-1" />
@@ -364,7 +373,7 @@ export default function TradePage() {
                   </div>
                   {selected.signal && selected.reason && (
                     <div className="mt-3 px-3 py-2 rounded text-xs" style={{ background: C.warnBg, color: C.warn }}>
-                      🧠 AI 信號 <SignalBadge score={selected.signal} /> — {selected.reason}
+                      <Brain size={14} className="inline" /> AI 信號 <SignalBadge score={selected.signal} /> — {selected.reason}
                     </div>
                   )}
                 </div>
@@ -408,7 +417,7 @@ export default function TradePage() {
         <div className="flex flex-col lg:w-[380px] w-full" style={{ background: C.bg1 }}>
           {/* Right tabs */}
           <div className="flex border-b" style={{ borderColor: C.border }}>
-            {([['orders', '📋 交易', todayOrders.length], ['positions', '💰 持倉', positions.length], ['risk', '🛡️ 風控', null]] as const).map(([key, label, count]) => (
+            {([['orders', '交易', todayOrders.length, <ClipboardList key="o" size={14} />], ['positions', '持倉', positions.length, <DollarSign key="p" size={14} />], ['risk', '風控', null, <Shield key="r" size={14} />]] as const).map(([key, label, count, icon]) => (
               <button
                 key={key}
                 onClick={() => setRightTab(key)}
@@ -418,7 +427,7 @@ export default function TradePage() {
                   borderBottom: rightTab === key ? `2px solid ${C.accent}` : '2px solid transparent',
                 }}
               >
-                {label}{count != null && <span className="ml-1 px-1.5 rounded-full text-[10px]" style={{ background: C.bg3 }}>{count}</span>}
+                <span className="inline-flex items-center gap-1">{icon} {label}</span>{count != null && <span className="ml-1 px-1.5 rounded-full text-[10px]" style={{ background: C.bg3 }}>{count}</span>}
               </button>
             ))}
           </div>
