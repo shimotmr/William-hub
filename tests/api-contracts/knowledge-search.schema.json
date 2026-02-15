@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Knowledge Search API Response Schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["title", "spec", "source"],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "spec": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string",
+        "enum": ["products_full"]
+      },
+      "product_types": {
+        "type": "string"
+      },
+      "list_price": {
+        "type": ["number", "null"]
+      },
+      "dealer_price": {
+        "type": ["number", "null"]
+      },
+      "total_qty": {
+        "type": ["number", "null"]
+      }
+    }
+  }
+}
