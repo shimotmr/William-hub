@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
-import { Doughnut } from 'react-chartjs-2'
 import { Target, Code, Palette, Search, BookOpen, PenTool, BarChart3, Mail, Bot, ClipboardList, Zap, CheckCircle, TrendingUp, Users, PieChart, Clock, Check } from 'lucide-react'
+import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { Doughnut } from 'react-chartjs-2'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 

@@ -3,13 +3,13 @@
 // ============================================================
 'use client'
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import {
   Bot, ClipboardList, Search, Palette, PenTool, Microscope,
   Code2, TrendingUp, ChevronRight, Monitor, ArrowLeft,
   Zap, Activity, Users, Loader2
 } from 'lucide-react'
+import Image from 'next/image'
+import { useState, useEffect } from 'react'
 
 interface Agent {
   id: string

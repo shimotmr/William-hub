@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
 import { Gem, Microscope, Bot, Zap, Brain, ClipboardList, DollarSign, Shield } from 'lucide-react'
+import { useState } from 'react'
 
 // ============================================================
 // Trade Page — William Hub v1.0
