@@ -4,7 +4,7 @@ import path from 'path'
 import { NextResponse } from 'next/server'
 
 // Path to work reports
-const WORK_REPORTS_PATH = '/Users/travis/clawd/work-reports'
+const WORK_REPORTS_PATH = path.join(process.cwd(), 'data')
 
 interface Report {
   id: number
