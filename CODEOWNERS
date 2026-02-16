@@ -1,0 +1,41 @@
+# CODEOWNERS - William Hub
+# 
+# This file defines code ownership for automatic review assignment.
+# See: ~/clawd/docs/module-ownership.md for detailed rules.
+#
+# Format: <path> @owner1 @owner2
+# 
+# Note: Currently using @shimotmr as placeholder for all agent roles
+# until agent GitHub accounts are configured.
+
+# Default fallback owner
+* @shimotmr
+
+# Application Routes
+/app/dashboard/ @shimotmr
+/app/trade/ @shimotmr
+/app/growth/ @shimotmr
+/app/board/ @shimotmr
+/app/agents/ @shimotmr
+/app/linebot-training/ @shimotmr
+/app/reports/ @shimotmr
+
+# API Routes (Coder authority)
+/app/api/ @shimotmr
+/app/api/dashboard/ @shimotmr
+/app/api/trade/ @shimotmr
+/app/api/growth/ @shimotmr
+
+# Components (Designer authority)
+/app/components/ @shimotmr
+
+# Homepage (Designer authority)
+/app/page.tsx @shimotmr
+
+# Configuration (Travis review required)
+/.github/ @shimotmr
+/next.config.js @shimotmr
+/tailwind.config.ts @shimotmr
+/tailwind-preset.ts @shimotmr
+/tsconfig.json @shimotmr
+/package.json @shimotmr
