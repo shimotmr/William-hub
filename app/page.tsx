@@ -22,12 +22,11 @@ const agentsList = [
 ]
 
 const tasks = [
-  { id: 1, agent: 'Coder', task: '普渡知識庫 markdown 清洗 + qmd 索引', status: 'done' as const },
+  { id: 1, agent: 'Coder', task: 'William Hub Reports 資料過濾修復', status: 'done' as const },
   { id: 2, agent: 'Designer', task: 'Agent 辦公室展示頁 — 等距視角 + Galgame 對話', status: 'planned' as const },
   { id: 3, agent: 'Coder', task: 'Portal 業績圖表 75% 標籤修正', status: 'in-progress' as const },
   { id: 4, agent: 'Inspector', task: '知識庫清洗品質驗證（抽樣 20 篇）', status: 'planned' as const },
   { id: 5, agent: 'Coder', task: 'Trade 頁面 Phase 2 — 接真實報價 API', status: 'planned' as const },
-  { id: 6, agent: 'Researcher', task: '普渡雲端文件中心 + 學習中心爬取', status: 'planned' as const },
   { id: 7, agent: 'Coder', task: 'EasyFlow 下次簽核實戰測試', status: 'planned' as const },
   { id: 8, agent: 'Designer', task: 'William Hub + Portal 統一設計規範', status: 'planned' as const },
 ]
