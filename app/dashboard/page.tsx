@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Doughnut } from 'react-chartjs-2'
 
+import SystemMonitor from '@/app/components/SystemMonitor'
+
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 type AgentData = {
@@ -173,6 +175,9 @@ export default function DashboardPage() {
           <div className="text-center text-foreground-muted py-20">載入失敗</div>
         ) : (
           <>
+            {/* System Status Monitor */}
+            <SystemMonitor />
+
             {/* KPI Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[
