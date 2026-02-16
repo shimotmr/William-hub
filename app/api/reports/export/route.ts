@@ -1,14 +1,11 @@
+import fs from 'fs'
+import path from 'path'
+
 import { mdToPdf } from 'md-to-pdf'
 import { NextResponse } from 'next/server'
 
-const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
-
-const headers = {
-  'apikey': SUPABASE_ANON_KEY,
-  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-  'Content-Type': 'application/json',
-}
+// Path to work reports
+const WORK_REPORTS_PATH = '/Users/travis/clawd/work-reports'
 
 const DARK_CSS = `
   body {
@@ -58,6 +55,50 @@ const DARK_CSS = `
   li { margin: 0.3em 0; }
 `
 
+// Find report file by ID
+function findReportById(reportId: number): { content: string; title: string } | null {
+  if (!fs.existsSync(WORK_REPORTS_PATH)) {
+    return null
+  }
+
+  const categories = fs.readdirSync(WORK_REPORTS_PATH, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name)
+
+  let currentId = 1
+
+  for (const category of categories) {
+    const categoryPath = path.join(WORK_REPORTS_PATH, category)
+    
+    try {
+      const files = fs.readdirSync(categoryPath)
+        .filter(file => file.endsWith('.md'))
+        .sort() // Ensure consistent ordering
+      
+      for (const file of files) {
+        if (currentId === reportId) {
+          const filepath = path.join(categoryPath, file)
+          const content = fs.readFileSync(filepath, 'utf-8')
+          
+          // Extract title from content or filename
+          let title = path.basename(file, '.md')
+          const titleMatch = content.match(/^#\s+(.+)$/m)
+          if (titleMatch) {
+            title = titleMatch[1].replace(/[#*]/g, '').trim()
+          }
+          
+          return { content, title }
+        }
+        currentId++
+      }
+    } catch (error) {
+      console.error(`Error reading category ${category}:`, error)
+    }
+  }
+
+  return null
+}
+
 export async function POST(request: Request) {
   try {
     const { reportId, format } = await request.json()
@@ -69,27 +110,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch report with content
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/reports?id=eq.${reportId}&select=id,title,md_content,content`,
-      { headers }
-    )
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to fetch report' }, { status: 500 })
-    }
-    const data = await res.json()
-    if (!data.length) {
+    // Find report by ID
+    const report = findReportById(reportId)
+    if (!report) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
-    const report = data[0]
-    const markdown = report.md_content || report.content || ''
+    const { content: markdown, title } = report
 
     if (!markdown) {
       return NextResponse.json({ error: 'Report has no content' }, { status: 400 })
     }
 
-    const safeTitle = (report.title || `report-${reportId}`)
+    const safeTitle = (title || `report-${reportId}`)
       .replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]/g, '_')
 
     if (format === 'markdown') {
