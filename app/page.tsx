@@ -58,7 +58,7 @@ const apps = [
   },
   {
     name: 'Task Board',
-    desc: 'Agent + William 任務看板',
+    desc: 'Travis + William 任務看板',
     url: '/board',
     tag: 'LIVE',
     accent: '#f59e0b',

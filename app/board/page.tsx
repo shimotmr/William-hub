@@ -446,13 +446,13 @@ export default function BoardPage() {
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <BoardColumn
-                title="Agent 看板"
+                title="Travis 看板"
                 icon={<IconRobot color="#3b82f6" />}
                 tasks={agentTasks}
                 accentColor="#3b82f6"
               />
               <BoardColumn
-                title="Travis 看板"
+                title="William 看板"
                 icon={<IconUser color="#f59e0b" />}
                 tasks={williamTasks}
                 accentColor="#f59e0b"
