@@ -6,12 +6,12 @@ import { NextResponse } from 'next/server'
 // This route requires dynamic rendering
 export const dynamic = 'force-dynamic'
 
-// Path to work reports
-const WORK_REPORTS_PATH = path.join(process.cwd(), 'data')
-
 // Supabase config
 const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
+
+// Path to work reports
+const WORK_REPORTS_PATH = path.join(process.cwd(), 'data')
 
 interface Report {
   id: number | string
@@ -19,13 +19,7 @@ interface Report {
   date: string
   author: string
   type: 'md'
-  doc_url: string | null
-  pdf_url: string | null
-  export_status: string | null
-  content?: string
-  md_content?: string
-  category?: string
-  filepath?: string
+  md_content: string
   source: 'local' | 'supabase'
 }
 
@@ -88,17 +82,14 @@ function extractMetadata(content: string, filepath: string, category: string): P
   return {
     title,
     date,
-    author,
-    category
+    author
   }
 }
 
-// Scan directory for markdown files
-function scanReportsDirectory(): Report[] {
-  const reports: Report[] = []
-  
+// Find local report by ID
+function findLocalReport(localId: number): Report | null {
   if (!fs.existsSync(WORK_REPORTS_PATH)) {
-    return reports
+    return null
   }
 
   const categories = fs.readdirSync(WORK_REPORTS_PATH, { withFileTypes: true })
@@ -115,45 +106,41 @@ function scanReportsDirectory(): Report[] {
         .filter(file => file.endsWith('.md'))
       
       for (const file of files) {
-        const filepath = path.join(categoryPath, file)
-        
-        try {
-          const content = fs.readFileSync(filepath, 'utf-8')
-          const metadata = extractMetadata(content, filepath, category)
+        if (idCounter === localId) {
+          const filepath = path.join(categoryPath, file)
           
-          const report: Report = {
-            id: `local_${idCounter++}`,
-            title: metadata.title || path.basename(file, '.md'),
-            date: metadata.date || new Date().toISOString().split('T')[0],
-            author: metadata.author || 'System',
-            type: 'md',
-            doc_url: null,
-            pdf_url: null,
-            export_status: null,
-            content: content,
-            md_content: content,
-            category: category,
-            filepath: filepath,
-            source: 'local'
+          try {
+            const content = fs.readFileSync(filepath, 'utf-8')
+            const metadata = extractMetadata(content, filepath, category)
+            
+            return {
+              id: `local_${idCounter}`,
+              title: metadata.title || path.basename(file, '.md'),
+              date: metadata.date || new Date().toISOString().split('T')[0],
+              author: metadata.author || 'System',
+              type: 'md',
+              md_content: content,
+              source: 'local'
+            }
+          } catch (error) {
+            console.error(`Error reading file ${filepath}:`, error)
+            return null
           }
-          
-          reports.push(report)
-        } catch (error) {
-          console.error(`Error reading file ${filepath}:`, error)
         }
+        idCounter++
       }
     } catch (error) {
       console.error(`Error reading category ${category}:`, error)
     }
   }
 
-  return reports
+  return null
 }
 
-// Fetch reports from Supabase
-async function fetchSupabaseReports(): Promise<Report[]> {
+// Fetch single report from Supabase
+async function fetchSupabaseReport(supabaseId: number): Promise<Report | null> {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?select=id,title,author,type,md_content,date&order=date.desc`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?id=eq.${supabaseId}&select=id,title,author,type,md_content,date`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -161,58 +148,72 @@ async function fetchSupabaseReports(): Promise<Report[]> {
     })
     
     if (!res.ok) {
-      console.error('Failed to fetch Supabase reports')
-      return []
+      return null
     }
     
     const data = await res.json()
-    return data.map((report: any) => ({
+    if (!data || data.length === 0) {
+      return null
+    }
+
+    const report = data[0]
+    return {
       id: `supabase_${report.id}`,
       title: report.title || 'Untitled Report',
       date: report.date || new Date().toISOString().split('T')[0],
       author: report.author || 'Agent',
-      type: 'md' as const,
-      doc_url: null,
-      pdf_url: null,
-      export_status: null,
-      md_content: report.md_content,
-      content: report.md_content,
-      source: 'supabase' as const,
-      supabase_id: report.id // Keep original ID for lookups
-    }))
+      type: 'md',
+      md_content: report.md_content || '',
+      source: 'supabase'
+    }
   } catch (error) {
-    console.error('Error fetching Supabase reports:', error)
-    return []
+    console.error('Error fetching Supabase report:', error)
+    return null
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const id = params.id
 
-    // Get both local and Supabase reports
-    const localReports = scanReportsDirectory()
-    const supabaseReports = await fetchSupabaseReports()
-    const allReports = [...localReports, ...supabaseReports]
-
-    if (id) {
-      const report = allReports.find(r => r.id === id || r.id === parseInt(id))
+    // Check if it's a Supabase report (numeric ID or starts with supabase_)
+    if (id.startsWith('supabase_')) {
+      const supabaseId = parseInt(id.replace('supabase_', ''))
+      const report = await fetchSupabaseReport(supabaseId)
+      if (!report) {
+        return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      }
+      return NextResponse.json(report)
+    } else if (/^\d+$/.test(id)) {
+      // Numeric ID - could be either Supabase or local
+      const numericId = parseInt(id)
+      
+      // Try Supabase first
+      const supabaseReport = await fetchSupabaseReport(numericId)
+      if (supabaseReport) {
+        return NextResponse.json(supabaseReport)
+      }
+      
+      // If not found in Supabase, try local
+      const localReport = findLocalReport(numericId)
+      if (localReport) {
+        return NextResponse.json(localReport)
+      }
+    } else if (id.startsWith('local_')) {
+      const localId = parseInt(id.replace('local_', ''))
+      const report = findLocalReport(localId)
       if (!report) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 })
       }
       return NextResponse.json(report)
     }
 
-    // Sort by date descending
-    const sortedReports = allReports.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    // Return list without content to reduce payload size
-    const reportsList = sortedReports.map(({ content, md_content, filepath, ...report }) => report)
-    
-    return NextResponse.json(reportsList)
+    return NextResponse.json({ error: 'Report not found' }, { status: 404 })
   } catch (error) {
-    console.error('Error in reports API:', error)
+    console.error('Error in report detail API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
