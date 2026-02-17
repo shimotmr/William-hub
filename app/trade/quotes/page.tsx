@@ -1,132 +1,427 @@
 'use client'
 
-import { Search, Filter, Star } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useRef, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Search, RefreshCw, Wifi, WifiOff } from 'lucide-react'
 
-import { PercentageBadge } from '@/components/trading/PercentageBadge'
-import { StockPrice } from '@/components/trading/StockPrice'
+import { QuoteCard } from '@/components/trading/QuoteCard'
+import { QuoteSearch } from '@/components/trading/QuoteSearch'
+import { WatchList } from '@/components/trading/WatchList'
+import { ConnectionStatus } from '@/components/trading/ConnectionStatus'
+
+interface QuoteData {
+  symbol: string
+  symbol_name: string
+  last_price: number
+  change: number
+  change_percent: number
+  volume: number
+  bid_price?: number
+  ask_price?: number
+  updated_at: string
+}
+
+interface SearchResult {
+  symbol: string
+  name: string
+  price?: number
+  change?: number
+  changePercent?: number
+}
+
+// 股票名稱映射（用於搜尋）
+const STOCK_NAMES: Record<string, string> = {
+  '2330': '台積電',
+  '2317': '鴻海',
+  '2454': '聯發科',
+  '2881': '富邦金',
+  '2412': '中華電',
+  '2303': '聯電',
+  '2002': '中鋼',
+  '6505': '台塑化',
+  '2886': '兆豐金',
+  '2603': '長榮',
+  '2609': '陽明',
+  '2882': '國泰金',
+  '2891': '中信金',
+  '2357': '華碩',
+  '3034': '聯詠',
+  '2308': '台達電',
+  '2382': '廣達',
+  '2395': '研華',
+  '3008': '大立光',
+  '2327': '國巨'
+}
+
+// 預設監視清單股票
+const DEFAULT_SYMBOLS = ['2330', '2317', '2454', '2881', '2412', '2303']
 
 /**
- * 即時報價頁面
+ * 即時報價面板頁面
  */
 export default function QuotesPage() {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSymbol, setSelectedSymbol] = useState<string>('2330')
+  const [activeWatchListId, setActiveWatchListId] = useState<string>('favorites')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [refreshInterval, setRefreshInterval] = useState<number>(10000) // 10秒
+  const [isAutoRefresh, setIsAutoRefresh] = useState<boolean>(true)
+  const [watchListSymbols, setWatchListSymbols] = useState<string[]>(DEFAULT_SYMBOLS)
+  
+  // 搜尋結果
+  const searchResults: SearchResult[] = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    
+    const query = searchQuery.toLowerCase()
+    const results: SearchResult[] = []
+    
+    Object.entries(STOCK_NAMES).forEach(([symbol, name]) => {
+      if (symbol.includes(query) || name.toLowerCase().includes(query)) {
+        results.push({
+          symbol,
+          name
+        })
+      }
+    })
+    
+    return results.slice(0, 8) // 限制顯示 8 個結果
+  }, [searchQuery])
 
-  // Mock 股票報價資料
-  const stocks = [
-    { symbol: '2330', name: '台積電', price: 598.00, change: 12.00, changePercent: 2.04, volume: 45230000 },
-    { symbol: '2317', name: '鴻海', price: 108.50, change: -1.50, changePercent: -1.36, volume: 23450000 },
-    { symbol: '2454', name: '聯發科', price: 1025.00, change: 25.00, changePercent: 2.50, volume: 8900000 },
-    { symbol: '6505', name: '台塑化', price: 89.20, change: -0.80, changePercent: -0.89, volume: 12300000 },
-    { symbol: '2412', name: '中華電', price: 123.50, change: 0.50, changePercent: 0.41, volume: 5600000 },
-    { symbol: '2881', name: '富邦金', price: 78.30, change: -2.10, changePercent: -2.61, volume: 18700000 },
-    { symbol: '2303', name: '聯電', price: 48.45, change: 1.25, changePercent: 2.65, volume: 34500000 },
-    { symbol: '2002', name: '中鋼', price: 28.90, change: -0.30, changePercent: -1.03, volume: 45600000 },
-  ]
+  // 獲取多股票報價
+  const {
+    data: quotesData,
+    isLoading: quotesLoading,
+    error: quotesError,
+    refetch: refetchQuotes
+  } = useQuery<{ quotes: QuoteData[] }>({
+    queryKey: ['quotes', watchListSymbols],
+    queryFn: async () => {
+      const response = await fetch(`/api/trade/quotes?symbols=${watchListSymbols.join(',')}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch quotes')
+      }
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch quotes')
+      }
+      return result.data
+    },
+    enabled: watchListSymbols.length > 0,
+    refetchInterval: isAutoRefresh ? refreshInterval : false,
+    staleTime: 5000 // 5秒內認為數據是新鮮的
+  })
 
-  const filteredStocks = stocks.filter(stock => 
-    stock.symbol.includes(searchTerm) || 
-    stock.name.includes(searchTerm)
-  )
+  // 獲取選中股票的詳細報價
+  const {
+    data: selectedQuoteData,
+    refetch: refetchSelectedQuote
+  } = useQuery<QuoteData>({
+    queryKey: ['quote', selectedSymbol],
+    queryFn: async () => {
+      const response = await fetch(`/api/trade/quote?symbol=${selectedSymbol}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote')
+      }
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch quote')
+      }
+      return result.data.quote
+    },
+    enabled: !!selectedSymbol,
+    refetchInterval: isAutoRefresh ? refreshInterval : false,
+    staleTime: 5000
+  })
+
+  // 處理監視清單變更
+  const handleWatchListChange = (watchListId: string) => {
+    setActiveWatchListId(watchListId)
+    // 這裡可以根據不同的監視清單加載不同的股票清單
+    if (watchListId === 'popular') {
+      setWatchListSymbols(['2330', '2317', '2454', '2881'])
+    } else {
+      setWatchListSymbols(DEFAULT_SYMBOLS)
+    }
+  }
+
+  // 處理股票選擇
+  const handleSymbolSelect = (symbol: string) => {
+    setSelectedSymbol(symbol)
+  }
+
+  // 處理搜尋
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+  }
+
+  // 處理添加到監視清單
+  const handleAddToWatchList = (symbol: string) => {
+    if (!watchListSymbols.includes(symbol)) {
+      setWatchListSymbols(prev => [...prev, symbol])
+    }
+    setSelectedSymbol(symbol)
+    setSearchQuery('')
+  }
+
+  // 手動重新整理
+  const handleManualRefresh = () => {
+    refetchQuotes()
+    if (selectedSymbol) {
+      refetchSelectedQuote()
+    }
+  }
+
+  // 切換自動重新整理
+  const toggleAutoRefresh = () => {
+    setIsAutoRefresh(!isAutoRefresh)
+  }
+
+  // 調整重新整理間隔
+  const handleIntervalChange = (interval: number) => {
+    setRefreshInterval(interval)
+  }
+
+  const quotes = quotesData?.quotes || []
+  const selectedQuote = selectedQuoteData || quotes.find(q => q.symbol === selectedSymbol)
 
   return (
-    <div className="space-y-6">
-      {/* 頁面標題 */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100">即時報價</h1>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 text-sm transition-colors">
-            <Filter size={16} />
-            篩選
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors">
-            <Star size={16} />
-            自選股
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-950">
+      <div className="flex h-screen">
+        {/* 左側面板 - 搜尋和監視清單 */}
+        <div className="w-1/3 border-r border-slate-800 flex flex-col bg-slate-900/30">
+          {/* 標頭區域 */}
+          <div className="p-4 border-b border-slate-800">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-xl font-bold text-slate-100">即時報價</h1>
+              <div className="flex items-center gap-2">
+                <ConnectionStatus />
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={quotesLoading}
+                  className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw size={16} className={quotesLoading ? 'animate-spin' : ''} />
+                </button>
+                <button
+                  onClick={toggleAutoRefresh}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isAutoRefresh 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                  }`}
+                >
+                  {isAutoRefresh ? <Wifi size={16} /> : <WifiOff size={16} />}
+                </button>
+              </div>
+            </div>
 
-      {/* 搜尋欄 */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
-        <input
-          type="text"
-          placeholder="搜尋股票代碼或名稱..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+            {/* 搜尋區域 */}
+            <QuoteSearch
+              onSearch={handleSearch}
+              onSelect={handleAddToWatchList}
+              searchResults={searchResults}
+              isLoading={false}
+              placeholder="搜尋股票代號或名稱..."
+            />
+          </div>
 
-      {/* 股票清單表格 */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">股票</th>
-                <th className="text-right px-6 py-4 text-sm font-medium text-slate-400">現價</th>
-                <th className="text-right px-6 py-4 text-sm font-medium text-slate-400">漲跌</th>
-                <th className="text-right px-6 py-4 text-sm font-medium text-slate-400">漲跌幅</th>
-                <th className="text-right px-6 py-4 text-sm font-medium text-slate-400">成交量</th>
-                <th className="text-center px-6 py-4 text-sm font-medium text-slate-400">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStocks.map((stock) => (
-                <tr key={stock.symbol} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-bold text-slate-100">{stock.symbol}</div>
-                      <div className="text-sm text-slate-400">{stock.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <StockPrice 
-                      price={stock.price}
-                      change={stock.change}
-                      showChange={false}
-                      size="md"
-                    />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <StockPrice 
-                      price={Math.abs(stock.change)}
-                      change={stock.change}
-                      showChange={false}
-                      size="sm"
-                    />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <PercentageBadge value={stock.changePercent} size="sm" />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="font-mono text-slate-300">
-                      {(stock.volume / 1000000).toFixed(1)}M
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors">
-                        買
-                      </button>
-                      <button className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors">
-                        賣
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+          {/* 監視清單 */}
+          <div className="p-4 border-b border-slate-800">
+            <WatchList
+              onWatchListChange={handleWatchListChange}
+              onSymbolSelect={handleSymbolSelect}
+              selectedWatchListId={activeWatchListId}
+            />
+          </div>
+
+          {/* 股票清單 */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <div className="space-y-3">
+              {quotesLoading && quotes.length === 0 && (
+                <div className="space-y-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-24 bg-slate-800/30 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              )}
+
+              {quotesError && (
+                <div className="text-center py-8">
+                  <p className="text-red-400 mb-2">載入報價失敗</p>
+                  <button
+                    onClick={handleManualRefresh}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm transition-colors"
+                  >
+                    重新載入
+                  </button>
+                </div>
+              )}
+
+              {quotes.map((quote) => (
+                <QuoteCard
+                  key={quote.symbol}
+                  quote={{
+                    symbol: quote.symbol,
+                    name: quote.symbol_name,
+                    price: quote.last_price,
+                    change: quote.change,
+                    changePercent: quote.change_percent,
+                    volume: quote.volume,
+                    updatedAt: quote.updated_at
+                  }}
+                  isSelected={selectedSymbol === quote.symbol}
+                  onSelect={handleSymbolSelect}
+                  onToggleWatchlist={(_symbol) => {
+                    // TODO: 實現監視清單切換邏輯
+                  }}
+                  isInWatchlist={watchListSymbols.includes(quote.symbol)}
+                  showAnimation={true}
+                />
               ))}
-            </tbody>
-          </table>
+
+              {quotes.length === 0 && !quotesLoading && (
+                <div className="text-center py-8 text-slate-400">
+                  <p>無股票資料</p>
+                  <p className="text-xs mt-1">請使用搜尋功能添加股票</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 右側面板 - 選中股票詳細資訊 */}
+        <div className="flex-1 bg-slate-950/50">
+          {selectedQuote ? (
+            <div className="h-full overflow-y-auto">
+              {/* 股票標頭 */}
+              <div className="sticky top-0 bg-slate-900/80 backdrop-blur-sm border-b border-slate-800 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h2 className="text-2xl font-bold text-slate-100">
+                        {selectedQuote.symbol}
+                      </h2>
+                      <span className="text-lg text-slate-400">
+                        {selectedQuote.symbol_name || STOCK_NAMES[selectedQuote.symbol]}
+                      </span>
+                    </div>
+                    <div className="flex items-end gap-4">
+                      <span className={`text-3xl font-bold font-mono ${
+                        selectedQuote.change > 0 
+                          ? 'text-red-400' 
+                          : selectedQuote.change < 0 
+                          ? 'text-green-400' 
+                          : 'text-slate-400'
+                      }`}>
+                        {selectedQuote.last_price.toFixed(2)}
+                      </span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-mono ${
+                          selectedQuote.change > 0 
+                            ? 'text-red-400' 
+                            : selectedQuote.change < 0 
+                            ? 'text-green-400' 
+                            : 'text-slate-400'
+                        }`}>
+                          {selectedQuote.change >= 0 ? '+' : ''}{selectedQuote.change.toFixed(2)}
+                        </span>
+                        <span className={`text-sm px-2 py-1 rounded font-medium ${
+                          selectedQuote.change_percent > 0 
+                            ? 'bg-red-500/20 text-red-400' 
+                            : selectedQuote.change_percent < 0 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-slate-500/20 text-slate-400'
+                        }`}>
+                          {selectedQuote.change_percent >= 0 ? '+' : ''}{selectedQuote.change_percent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 快速操作按鈕 */}
+                  <div className="flex items-center gap-2">
+                    <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
+                      買進
+                    </button>
+                    <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                      賣出
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 詳細資訊 */}
+              <div className="p-6 space-y-6">
+                {/* 基本資訊卡片 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">成交量</h3>
+                    <p className="text-lg font-mono text-slate-100">
+                      {selectedQuote.volume.toLocaleString()} 股
+                    </p>
+                  </div>
+                  {selectedQuote.bid_price && selectedQuote.ask_price && (
+                    <>
+                      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <h3 className="text-sm font-medium text-slate-400 mb-2">委買價</h3>
+                        <p className="text-lg font-mono text-green-400">
+                          {selectedQuote.bid_price.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <h3 className="text-sm font-medium text-slate-400 mb-2">委賣價</h3>
+                        <p className="text-lg font-mono text-red-400">
+                          {selectedQuote.ask_price.toFixed(2)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                    <h3 className="text-sm font-medium text-slate-400 mb-2">更新時間</h3>
+                    <p className="text-lg font-mono text-slate-100">
+                      {new Date(selectedQuote.updated_at).toLocaleTimeString('zh-TW')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 佔位符區域 - 未來可添加圖表、五檔等 */}
+                <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-8 text-center">
+                  <p className="text-slate-400 mb-2">更多功能開發中</p>
+                  <p className="text-sm text-slate-500">
+                    五檔報價、技術圖表、歷史資料等功能將陸續上線
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Search size={48} className="mx-auto mb-4 text-slate-600" />
+                <p className="text-slate-400 mb-2">請選擇股票</p>
+                <p className="text-sm text-slate-500">從左側清單中選擇股票查看詳細報價</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {filteredStocks.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-slate-400">找不到符合條件的股票</p>
+      {/* 設定面板 (隱藏) */}
+      <div className="fixed bottom-4 right-4">
+        <div className="bg-slate-900/90 backdrop-blur-sm border border-slate-700 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span>重新整理間隔:</span>
+            <select 
+              value={refreshInterval} 
+              onChange={(e) => handleIntervalChange(Number(e.target.value))}
+              className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-200 text-xs"
+            >
+              <option value={5000}>5秒</option>
+              <option value={10000}>10秒</option>
+              <option value={30000}>30秒</option>
+              <option value={60000}>1分鐘</option>
+            </select>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
