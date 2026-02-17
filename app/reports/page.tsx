@@ -193,7 +193,7 @@ function ReportCard({
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <span className="text-[15px] font-semibold text-foreground truncate flex-1">
-          <span className="text-foreground-subtle font-mono text-xs mr-1">#{report.id}</span>{report.title}
+          <span className="text-foreground-subtle font-mono text-xs mr-1">#{String(report.id).replace(/^supabase_/, '')}</span>{report.title}
         </span>
         <span
           className="text-[10px] px-1.5 py-0.5 rounded-full uppercase font-medium shrink-0"
