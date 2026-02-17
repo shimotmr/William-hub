@@ -90,6 +90,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
+    // Debug: check env vars
+    if (searchParams.get('debug') === '1') {
+      return NextResponse.json({
+        SUPABASE_URL: SUPABASE_URL?.substring(0, 30) + '...',
+        KEY_PREFIX: SUPABASE_KEY?.substring(0, 20) + '...',
+        HAS_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        HAS_NEXT_PUBLIC_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      })
+    }
+
     // Get reports from Supabase only
     const reports = await fetchSupabaseReports()
 
