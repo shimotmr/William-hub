@@ -134,6 +134,15 @@ const apps = [
     accentBg: 'rgba(239,68,68,0.08)',
     borderColor: 'rgba(239,68,68,0.25)',
   },
+  {
+    name: 'RAG Testing',
+    desc: 'RAG 測試題庫管理 / 批次上傳 / 測試執行',
+    url: '/rag-testing',
+    tag: 'LIVE',
+    accent: '#f97316',
+    accentBg: 'rgba(249,115,22,0.08)',
+    borderColor: 'rgba(249,115,22,0.25)',
+  },
 ]
 
 // --- SVG Icons (stroke-based, unified style) ---
@@ -246,6 +255,15 @@ function IconRules({ color }: { color: string }) {
   )
 }
 
+function IconRAG({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Dashboard': IconDashboard,
   'Aurotek Portal': IconAurotek,
@@ -256,6 +274,7 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Travis': IconTravis,
   'Growth': IconGrowth,
   'Rules Dashboard': IconRules,
+  'RAG Testing': IconRAG,
 }
 
 // --- Helpers ---
