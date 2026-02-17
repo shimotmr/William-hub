@@ -2,10 +2,10 @@
 
 import {
   MessageCircle, ArrowLeft, Send, Users, Clock, Hash,
-  Loader2, RefreshCw, User, Bot, ChevronDown
+  Loader2, RefreshCw, User, Bot, ChevronDown, Plus, Link
 } from 'lucide-react'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface Thread {
   id: string
@@ -16,6 +16,8 @@ interface Thread {
   created_by: string
   is_active: boolean
   message_count?: number
+  task_id?: number
+  task_title?: string
 }
 
 interface Message {
@@ -85,6 +87,13 @@ export default function ChatPage() {
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null)
   const [loading, setLoading] = useState(true)
   const [messagesLoading, setMessagesLoading] = useState(false)
+  const [newMessage, setNewMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [showNewThreadForm, setShowNewThreadForm] = useState(false)
+  const [newThreadTitle, setNewThreadTitle] = useState('')
+  const [newThreadDescription, setNewThreadDescription] = useState('')
+  const [newThreadTaskId, setNewThreadTaskId] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 加載討論串列表
   useEffect(() => {
@@ -104,18 +113,35 @@ export default function ChatPage() {
   useEffect(() => {
     if (!selectedThread) return
     
-    setMessagesLoading(true)
-    fetch(`/api/chat/messages?thread_id=${selectedThread.id}`)
-      .then(res => res.json())
-      .then(data => {
-        setMessages(data)
-        setMessagesLoading(false)
-      })
-      .catch(() => {
-        setMessages([])
-        setMessagesLoading(false)
-      })
+    const loadMessages = () => {
+      if (messagesLoading) return // 避免重複請求
+      
+      setMessagesLoading(true)
+      fetch(`/api/chat/messages?thread_id=${selectedThread.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setMessages(data)
+          setMessagesLoading(false)
+        })
+        .catch(() => {
+          setMessages([])
+          setMessagesLoading(false)
+        })
+    }
+
+    // 初次載入
+    loadMessages()
+    
+    // 設定輪詢 - 每 10 秒刷新一次
+    const interval = setInterval(loadMessages, 10000)
+    
+    return () => clearInterval(interval)
   }, [selectedThread])
+
+  // 自動捲動到最新訊息
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleThreadSelect = (thread: Thread) => {
     setSelectedThread(thread)
@@ -132,6 +158,79 @@ export default function ChatPage() {
         setMessagesLoading(false)
       })
       .catch(() => setMessagesLoading(false))
+  }
+
+  // 發送訊息
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedThread || sending) return
+    
+    setSending(true)
+    try {
+      const response = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          thread_id: selectedThread.id,
+          sender: 'main', // 預設為 main agent
+          content: newMessage.trim(),
+          message_type: 'text'
+        })
+      })
+
+      if (response.ok) {
+        setNewMessage('')
+        // 立即重新載入訊息
+        refreshMessages()
+      } else {
+        console.error('Failed to send message')
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  // 建立新討論串
+  const createThread = async () => {
+    if (!newThreadTitle.trim()) return
+
+    try {
+      const response = await fetch('/api/chat/threads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newThreadTitle.trim(),
+          description: newThreadDescription.trim() || null,
+          created_by: 'main',
+          task_id: newThreadTaskId ? parseInt(newThreadTaskId) : null
+        })
+      })
+
+      if (response.ok) {
+        const newThread = await response.json()
+        setThreads(prev => [newThread, ...prev])
+        setSelectedThread(newThread)
+        setShowNewThreadForm(false)
+        setNewThreadTitle('')
+        setNewThreadDescription('')
+        setNewThreadTaskId('')
+      }
+    } catch (error) {
+      console.error('Error creating thread:', error)
+    }
+  }
+
+  // 處理按 Enter 發送訊息
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
   }
 
   return (
@@ -166,7 +265,7 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="text-xs text-foreground-subtle bg-card px-2 py-1 rounded border">
-              Phase 1 - 唯讀展示
+              MVP 互動版本
             </div>
           </div>
         </header>
@@ -177,7 +276,13 @@ export default function ChatPage() {
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-foreground">討論串</h2>
-                <Hash size={14} className="text-foreground-muted" />
+                <button
+                  onClick={() => setShowNewThreadForm(true)}
+                  className="p-1.5 hover:bg-card rounded-lg transition-colors"
+                  title="新增討論串"
+                >
+                  <Plus size={14} className="text-foreground-muted" />
+                </button>
               </div>
               
               {loading ? (
@@ -186,6 +291,57 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
+                  {/* 新增討論串表單 */}
+                  {showNewThreadForm && (
+                    <div className="p-3 border border-border rounded-lg bg-card">
+                      <h3 className="text-sm font-semibold text-foreground mb-2">新增討論串</h3>
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          placeholder="討論串標題"
+                          value={newThreadTitle}
+                          onChange={(e) => setNewThreadTitle(e.target.value)}
+                          className="w-full text-xs px-2 py-1.5 border border-border rounded bg-background text-foreground"
+                        />
+                        <textarea
+                          placeholder="描述（選填）"
+                          value={newThreadDescription}
+                          onChange={(e) => setNewThreadDescription(e.target.value)}
+                          rows={2}
+                          className="w-full text-xs px-2 py-1.5 border border-border rounded bg-background text-foreground resize-none"
+                        />
+                        <input
+                          type="number"
+                          placeholder="關聯任務 ID（選填）"
+                          value={newThreadTaskId}
+                          onChange={(e) => setNewThreadTaskId(e.target.value)}
+                          className="w-full text-xs px-2 py-1.5 border border-border rounded bg-background text-foreground"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={createThread}
+                            disabled={!newThreadTitle.trim()}
+                            className="flex-1 text-xs py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            建立
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowNewThreadForm(false)
+                              setNewThreadTitle('')
+                              setNewThreadDescription('')
+                              setNewThreadTaskId('')
+                            }}
+                            className="flex-1 text-xs py-1.5 border border-border rounded hover:bg-card"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 討論串列表 */}
                   {threads.map((thread) => (
                     <button
                       key={thread.id}
@@ -208,6 +364,15 @@ export default function ChatPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* 任務關聯顯示 */}
+                      {thread.task_id && (
+                        <div className="flex items-center gap-1 mb-1">
+                          <Link size={10} className="text-blue-500" />
+                          <span className="text-xs text-blue-600">任務 #{thread.task_id}</span>
+                        </div>
+                      )}
+
                       {thread.description && (
                         <p className="text-xs text-foreground-subtle line-clamp-2 mb-2">
                           {thread.description}
@@ -238,9 +403,17 @@ export default function ChatPage() {
                 <div className="border-b border-border px-6 py-4 bg-card/20">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-foreground">{selectedThread.title}</h2>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-lg font-semibold text-foreground">{selectedThread.title}</h2>
+                        {selectedThread.task_id && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-600 text-xs rounded-full border border-blue-200">
+                            <Link size={10} />
+                            <span>任務 #{selectedThread.task_id}</span>
+                          </div>
+                        )}
+                      </div>
                       {selectedThread.description && (
-                        <p className="text-sm text-foreground-muted mt-1">{selectedThread.description}</p>
+                        <p className="text-sm text-foreground-muted">{selectedThread.description}</p>
                       )}
                     </div>
                     <button 
@@ -291,6 +464,7 @@ export default function ChatPage() {
                           </div>
                         )
                       })}
+                      <div ref={messagesEndRef} />
                     </div>
                   ) : (
                     <div className="flex items-center justify-center py-12">
@@ -302,11 +476,35 @@ export default function ChatPage() {
                   )}
                 </div>
 
-                {/* 底部提示 */}
-                <div className="border-t border-border px-6 py-3 bg-card/20">
-                  <div className="flex items-center justify-center text-xs text-foreground-subtle">
-                    <Bot size={12} className="mr-1" />
-                    Phase 1 為唯讀展示模式，暫不支援發送訊息
+                {/* 訊息輸入框 */}
+                <div className="border-t border-border px-6 py-4 bg-card/20">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder="輸入訊息..."
+                        rows={1}
+                        disabled={sending}
+                        className="w-full px-3 py-2 border border-border rounded-lg resize-none bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                        style={{
+                          minHeight: '40px',
+                          maxHeight: '120px'
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim() || sending}
+                      className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {sending ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Send size={16} />
+                      )}
+                    </button>
                   </div>
                 </div>
               </>

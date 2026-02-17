@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS agent_threads (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_by VARCHAR(50),
-  is_active BOOLEAN DEFAULT true
+  is_active BOOLEAN DEFAULT true,
+  task_id INTEGER -- 關聯 board_tasks 表
 );
 
 -- Agent Messages 表
