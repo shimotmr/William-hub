@@ -5,7 +5,7 @@
 
 import {
   FileText, FileDown, ArrowLeft, Loader2,
-  User, Calendar, Filter,
+  User, Calendar, Filter, ArrowUpDown,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -172,6 +172,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [contentLoading, setContentLoading] = useState(false)
   const [mobileShowContent, setMobileShowContent] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // 預設降序（新的在上）
 
   // Fetch list
   useEffect(() => {
@@ -198,7 +199,12 @@ export default function ReportsPage() {
       .finally(() => setContentLoading(false))
   }, [selectedId])
 
-  const filtered = filter === 'all' ? reports : reports.filter((r) => r.type === filter)
+  const filtered = (filter === 'all' ? reports : reports.filter((r) => r.type === filter))
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+    })
 
   const filters: { label: string; value: FilterType }[] = [
     { label: 'All', value: 'all' },
@@ -211,21 +217,32 @@ export default function ReportsPage() {
   const sidebar = (
     <div className="flex flex-col h-full">
       {/* Filter chips */}
-      <div className="flex gap-2 p-4 pb-2 flex-wrap">
-        {filters.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-              filter === f.value
-                ? 'bg-blue-500 text-white shadow-[0_0_8px_rgba(59,130,246,0.4)]'
-                : 'bg-muted border border-border text-foreground-muted hover:bg-accent'
-            }`}
-          >
-            <Filter size={10} className="inline mr-1" />
-            {f.label}
-          </button>
-        ))}
+      <div className="flex justify-between items-center gap-3 p-4 pb-2">
+        <div className="flex gap-2 flex-wrap">
+          {filters.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                filter === f.value
+                  ? 'bg-blue-500 text-white shadow-[0_0_8px_rgba(59,130,246,0.4)]'
+                  : 'bg-muted border border-border text-foreground-muted hover:bg-accent'
+              }`}
+            >
+              <Filter size={10} className="inline mr-1" />
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {/* Sort button */}
+        <button
+          onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 bg-muted border border-border text-foreground-muted hover:bg-accent flex items-center gap-1.5"
+          title={`排序：${sortOrder === 'desc' ? '新到舊' : '舊到新'}`}
+        >
+          <ArrowUpDown size={12} />
+          {sortOrder === 'desc' ? '新→舊' : '舊→新'}
+        </button>
       </div>
 
       {/* List */}

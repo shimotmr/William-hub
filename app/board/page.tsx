@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ArrowUpDown } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
@@ -307,6 +307,16 @@ export default function BoardPage() {
   const [doneTasks, setDoneTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'active' | 'planned' | 'backlog' | 'done'>('active')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // 預設降序（新的在上）
+
+  // 排序函數
+  const sortTasks = (tasks: Task[]) => {
+    return [...tasks].sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime()
+      const dateB = new Date(b.created_at).getTime()
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+    })
+  }
 
   useEffect(() => {
     Promise.all([
@@ -352,47 +362,58 @@ export default function BoardPage() {
             </Link>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit border border-border">
+          {/* Tabs and Sort */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit border border-border">
+              <button
+                onClick={() => setTab('active')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  tab === 'active'
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    : 'text-foreground-muted hover:text-foreground border border-transparent'
+                }`}
+              >
+                待辦 ({activeTasks.length})
+              </button>
+              <button
+                onClick={() => setTab('planned')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  tab === 'planned'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                    : 'text-foreground-muted hover:text-foreground border border-transparent'
+                }`}
+              >
+                規劃中 ({plannedTasks.length})
+              </button>
+              <button
+                onClick={() => setTab('backlog')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  tab === 'backlog'
+                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                    : 'text-foreground-muted hover:text-foreground border border-transparent'
+                }`}
+              >
+                長期 ({backlogTasks.length})
+              </button>
+              <button
+                onClick={() => setTab('done')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  tab === 'done'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'text-foreground-muted hover:text-foreground border border-transparent'
+                }`}
+              >
+                歷史 ({doneTasks.length})
+              </button>
+            </div>
+            {/* Sort button */}
             <button
-              onClick={() => setTab('active')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                tab === 'active'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'text-foreground-muted hover:text-foreground border border-transparent'
-              }`}
+              onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+              className="px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 bg-muted border border-border text-foreground-muted hover:bg-accent flex items-center gap-1.5 w-fit"
+              title={`排序：${sortOrder === 'desc' ? '新到舊' : '舊到新'}`}
             >
-              待辦 ({activeTasks.length})
-            </button>
-            <button
-              onClick={() => setTab('planned')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                tab === 'planned'
-                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                  : 'text-foreground-muted hover:text-foreground border border-transparent'
-              }`}
-            >
-              規劃中 ({plannedTasks.length})
-            </button>
-            <button
-              onClick={() => setTab('backlog')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                tab === 'backlog'
-                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                  : 'text-foreground-muted hover:text-foreground border border-transparent'
-              }`}
-            >
-              長期 ({backlogTasks.length})
-            </button>
-            <button
-              onClick={() => setTab('done')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                tab === 'done'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'text-foreground-muted hover:text-foreground border border-transparent'
-              }`}
-            >
-              歷史 ({doneTasks.length})
+              <ArrowUpDown size={12} />
+              {sortOrder === 'desc' ? '新→舊' : '舊→新'}
             </button>
           </div>
         </header>
@@ -406,15 +427,16 @@ export default function BoardPage() {
                              : tab === 'backlog' ? backlogTasks
                              : doneTasks
 
-          const agentTasks = currentTasks.filter((t) => t.board === 'agent')
-          const williamTasks = currentTasks.filter((t) => t.board === 'william')
+          const sortedTasks = sortTasks(currentTasks)
+          const agentTasks = sortedTasks.filter((t) => t.board === 'agent')
+          const williamTasks = sortedTasks.filter((t) => t.board === 'william')
 
           if (tab === 'done') {
             return (
               <BoardColumn
                 title="歷史任務"
                 icon={<IconHistory color="#10b981" />}
-                tasks={currentTasks}
+                tasks={sortedTasks}
                 accentColor="#10b981"
                 isHistory
               />
