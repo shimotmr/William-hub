@@ -15,47 +15,61 @@ export interface AgentStatus {
 
 export async function GET() {
   try {
-    // Fetch all executing tasks from board_tasks
-    const tasksRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/board_tasks?status=eq.執行中&select=id,title,assignee,updated_at&order=updated_at.desc`,
-      {
+    // Fetch all agents from agents table and executing tasks from board_tasks in parallel
+    const [agentsRes, tasksRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/agents?order=created_at.asc`, {
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        next: { revalidate: 0 }, // Always fresh
-      }
-    )
+        next: { revalidate: 0 },
+      }),
+      fetch(
+        `${SUPABASE_URL}/rest/v1/board_tasks?status=eq.執行中&select=id,title,assignee,updated_at&order=updated_at.desc`,
+        {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          next: { revalidate: 0 },
+        }
+      ),
+    ])
 
-    if (!tasksRes.ok) {
-      const errText = await tasksRes.text()
-      console.error('[agents/status] Supabase error:', errText)
-      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+    if (!agentsRes.ok) {
+      console.error('[agents/status] Failed to fetch agents')
+      return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
     }
 
+    const agents = await agentsRes.json()
     const tasks: Array<{ id: number; title: string; assignee: string; updated_at: string }> =
-      await tasksRes.json()
+      tasksRes.ok ? await tasksRes.json() : []
 
-    // Group by assignee — since tasks are ordered by updated_at desc,
-    // the first one encountered per assignee is the most recent task.
-    const grouped = new Map<string, AgentStatus>()
-
+    // Group tasks by assignee
+    const taskMap = new Map<string, { active_tasks: number; current_task: string }>()
     for (const task of tasks) {
       const agentName = task.assignee || 'Unknown'
-      const existing = grouped.get(agentName)
+      const existing = taskMap.get(agentName)
       if (existing) {
         existing.active_tasks += 1
         // current_task already set to the most recent (first encountered)
       } else {
-        grouped.set(agentName, {
-          agent_name: agentName,
+        taskMap.set(agentName, {
           active_tasks: 1,
           current_task: task.title,
         })
       }
     }
 
-    const result = Array.from(grouped.values())
+    // Build result with all agents, including those without active tasks
+    const result: AgentStatus[] = agents.map((agent: { name: string; id: string }) => {
+      const taskInfo = taskMap.get(agent.name) || taskMap.get(agent.id) || null
+      return {
+        agent_name: agent.name,
+        active_tasks: taskInfo?.active_tasks || 0,
+        current_task: taskInfo?.current_task || null,
+      }
+    })
 
     return NextResponse.json(result, {
       headers: {

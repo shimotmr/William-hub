@@ -3,34 +3,33 @@ import { NextResponse } from 'next/server'
 const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
 
-const AGENT_ROLES: Record<string, string> = {
-  'Travis': '總管 / 主 Agent',
-  'Coder': '工程開發',
-  'Designer': '設計 / UI',
-  'Inspector': '品質檢測',
-  'Researcher': '資料調研',
-  'Writer': '文案撰寫',
-  'Analyst': '數據分析',
-  'Secretary': '行政秘書',
-}
-
-const KNOWN_AGENTS = Object.keys(AGENT_ROLES)
+// Agent roles will be fetched dynamically from agents table
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const allTasksRes = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?select=*&order=created_at.desc`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    })
+    // Fetch agents and tasks in parallel
+    const [agentsRes, allTasksRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/agents?order=created_at.asc`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/board_tasks?select=*&order=created_at.desc`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      }),
+    ])
 
-    if (!allTasksRes.ok) {
-      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+    if (!agentsRes.ok || !allTasksRes.ok) {
+      return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
     }
 
+    const agents = await agentsRes.json()
     const allTasks = await allTasksRes.json()
 
     // Status distribution
@@ -51,9 +50,8 @@ export async function GET() {
     weekStart.setDate(weekStart.getDate() - mondayOffset)
     weekStart.setHours(0, 0, 0, 0)
     
-    // Convert weekStart back to UTC for comparison
-    const weekStartStr = weekStart.toLocaleString('en-US', { timeZone: 'Asia/Taipei' })
-    const weekCompleted = allTasks.filter((t: any) => {
+    // weekStart is already in correct timezone for comparison
+    const weekCompleted = allTasks.filter((t: { status: string; completed_at: string | null }) => {
       if (t.status !== '已完成' || !t.completed_at) return false
       const completedTpe = new Date(new Date(t.completed_at).toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
       return completedTpe >= weekStart
@@ -63,24 +61,25 @@ export async function GET() {
     const todayStart = new Date(nowTpe)
     todayStart.setHours(0, 0, 0, 0)
 
-    // Agent stats - use known agents list, match by assignee containing agent name
-    const agentStats = KNOWN_AGENTS.map(agentName => {
-      const agentTasks = allTasks.filter((t: any) => {
+    // Agent stats - use dynamic agents list from database
+    const agentStats = agents.map((agent: { id: string; name: string; role?: string; title?: string }) => {
+      const agentName = agent.name
+      const agentTasks = allTasks.filter((t: { assignee: string | null }) => {
         const assignee = (t.assignee || '').toLowerCase()
-        return assignee.includes(agentName.toLowerCase())
+        return assignee.includes(agentName.toLowerCase()) || assignee === agent.id
       })
-      const completed = agentTasks.filter((t: any) => t.status === '已完成')
-      const todayCompleted = completed.filter((t: any) => {
+      const completed = agentTasks.filter((t: { status: string }) => t.status === '已完成')
+      const todayCompleted = completed.filter((t: { completed_at: string | null }) => {
         if (!t.completed_at) return false
         const completedTpe = new Date(new Date(t.completed_at).toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
         return completedTpe >= todayStart
       })
-      const activeTasks = agentTasks.filter((t: any) => t.status === '執行中')
-      const currentTask = activeTasks.length > 0 ? activeTasks[0].title : null
+      const activeTasks = agentTasks.filter((t: { status: string }) => t.status === '執行中')
+      const currentTask = activeTasks.length > 0 ? (activeTasks[0] as { title: string }).title : null
 
       return {
         name: agentName,
-        role: AGENT_ROLES[agentName],
+        role: agent.role || agent.title || 'Agent',
         total: agentTasks.length,
         completed: completed.length,
         todayCompleted: todayCompleted.length,
@@ -92,10 +91,10 @@ export async function GET() {
 
     // Recent completed tasks (activity feed)
     const recentCompleted = allTasks
-      .filter((t: any) => t.status === '已完成' && t.completed_at)
-      .sort((a: any, b: any) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
+      .filter((t: { status: string; completed_at: string | null }) => t.status === '已完成' && t.completed_at)
+      .sort((a: { completed_at: string }, b: { completed_at: string }) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
       .slice(0, 10)
-      .map((t: any) => ({
+      .map((t: { id: number; title: string; completed_at: string; assignee: string | null }) => ({
         id: t.id,
         title: t.title,
         completedAt: t.completed_at,
@@ -114,7 +113,7 @@ export async function GET() {
       agents: agentStats,
       recentCompleted,
     })
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

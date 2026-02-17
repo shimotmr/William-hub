@@ -10,8 +10,7 @@ const ThemeToggle = dynamic(() => import('./components/ThemeToggle').then(mod =>
   ssr: false,
 })
 
-// Default agent names to display (even if they have no active tasks)
-const DEFAULT_AGENTS = ['Travis', 'Inspector', 'Secretary', 'Writer', 'Researcher', 'Coder', 'Designer', 'Analyst']
+// No default agents - load dynamically from API
 
 interface Agent {
   name: string
@@ -20,11 +19,7 @@ interface Agent {
   currentTask?: string | null
 }
 
-interface AgentStatus {
-  agent_name: string
-  active_tasks: number
-  current_task: string | null
-}
+// AgentStatus interface moved to agents API usage only
 
 interface BoardTask {
   id: number
@@ -302,9 +297,7 @@ function ArrowRight() {
 // Page Component
 // ============================================================
 export default function Home() {
-  const [agents, setAgents] = useState<Agent[]>(
-    DEFAULT_AGENTS.map(name => ({ name, status: 'idle' as const }))
-  )
+  const [agents, setAgents] = useState<Agent[]>([])
   const [tokens, setTokens] = useState({ today: 0, week: 0, month: 0, total: 0 })
   const [tasks, setTasks] = useState<Task[]>([])
 
@@ -377,33 +370,23 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/agents/status')
+    // Fetch all agents from agents table with their status
+    fetch('/api/agents')
       .then(r => r.json())
-      .then((statuses: AgentStatus[]) => {
-        if (Array.isArray(statuses)) {
-          const agentMap = new Map<string, Agent>()
-          
-          // Initialize with default agents
-          DEFAULT_AGENTS.forEach(name => {
-            agentMap.set(name, { name, status: 'idle' })
-          })
-          
-          // Update with real data from API
-          statuses.forEach(status => {
-            const name = status.agent_name
-            agentMap.set(name, {
-              name,
-              status: status.active_tasks > 0 ? 'ok' : 'idle',
-              activeTasks: status.active_tasks,
-              currentTask: status.current_task
-            })
-          })
-          
-          setAgents(Array.from(agentMap.values()))
+      .then((agentData) => {
+        if (Array.isArray(agentData)) {
+          const agentList: Agent[] = agentData.map(agent => ({
+            name: agent.name,
+            status: (agent.activeTasks > 0 ? 'ok' : (agent.status === 'active' ? 'idle' : 'fail')) as 'ok' | 'fail' | 'idle',
+            activeTasks: agent.activeTasks || 0,
+            currentTask: agent.currentTask || null
+          }))
+          setAgents(agentList)
         }
       })
       .catch(() => {
-        // Keep default state on error
+        // Keep empty state on error
+        setAgents([])
       })
   }, [])
 
