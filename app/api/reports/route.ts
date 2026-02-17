@@ -9,6 +9,24 @@ export const dynamic = 'force-dynamic'
 // Path to work reports
 const WORK_REPORTS_PATH = path.join(process.cwd(), 'data')
 
+// PDF storage path
+const PDF_DIR = path.join(process.cwd(), 'public', 'reports', 'pdfs')
+
+// Check if a PDF exists for a given numeric report ID
+function getPdfInfo(id: number | string): { pdf_url: string | null; pdf_exists: boolean; pdf_size: number | null } {
+  try {
+    const numericId = String(id).replace(/^supabase_/, '')
+    if (!fs.existsSync(PDF_DIR)) return { pdf_url: null, pdf_exists: false, pdf_size: null }
+    const files = fs.readdirSync(PDF_DIR)
+    const match = files.find((f) => f.startsWith(`report-${numericId}-`) && f.endsWith('.pdf'))
+    if (!match) return { pdf_url: null, pdf_exists: false, pdf_size: null }
+    const stat = fs.statSync(path.join(PDF_DIR, match))
+    return { pdf_url: `/api/reports/${numericId}/pdf`, pdf_exists: true, pdf_size: stat.size }
+  } catch {
+    return { pdf_url: null, pdf_exists: false, pdf_size: null }
+  }
+}
+
 // Supabase config
 const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
@@ -21,6 +39,8 @@ interface Report {
   type: 'md'
   doc_url: string | null
   pdf_url: string | null
+  pdf_exists?: boolean
+  pdf_size?: number | null
   export_status: string | null
   content?: string
   md_content?: string
@@ -166,20 +186,25 @@ async function fetchSupabaseReports(): Promise<Report[]> {
     }
     
     const data = await res.json()
-    return data.map((report: any) => ({
-      id: `supabase_${report.id}`,
-      title: report.title || 'Untitled Report',
-      date: report.date || new Date().toISOString().split('T')[0],
-      author: report.author || 'Agent',
-      type: 'md' as const,
-      doc_url: null,
-      pdf_url: null,
-      export_status: null,
-      md_content: report.md_content,
-      content: report.md_content,
-      source: 'supabase' as const,
-      supabase_id: report.id // Keep original ID for lookups
-    }))
+    return data.map((report: any) => {
+      const pdfInfo = getPdfInfo(report.id)
+      return {
+        id: `supabase_${report.id}`,
+        title: report.title || 'Untitled Report',
+        date: report.date || new Date().toISOString().split('T')[0],
+        author: report.author || 'Agent',
+        type: 'md' as const,
+        doc_url: null,
+        pdf_url: pdfInfo.pdf_url,
+        pdf_exists: pdfInfo.pdf_exists,
+        pdf_size: pdfInfo.pdf_size,
+        export_status: null,
+        md_content: report.md_content,
+        content: report.md_content,
+        source: 'supabase' as const,
+        supabase_id: report.id // Keep original ID for lookups
+      }
+    })
   } catch (error) {
     console.error('Error fetching Supabase reports:', error)
     return []
