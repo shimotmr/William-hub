@@ -1,10 +1,14 @@
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
-import { ShioajiClient } from '@/lib/shioaji-client'
-import { CredentialEncryption } from '@/lib/encryption'
 import { spawn } from 'child_process'
+import fs from 'fs'
 import path from 'path'
+
+import { NextRequest, NextResponse } from 'next/server'
+
+import { CredentialEncryption } from '@/lib/encryption'
+import { ShioajiClient } from '@/lib/shioaji-client'
+import { createClient } from '@/lib/supabase-server'
+
 
 // GET /api/trade/quote?symbol=2330 - Get single stock quote
 export async function GET(request: NextRequest) {
@@ -93,11 +97,10 @@ async function getQuoteFromShioaji(symbol: string, credentials: Record<string, u
     
     // Create temp credentials file
     const tempCredPath = path.join(process.env.HOME || '', '.openclaw', 'temp', `shioaji_quote_${Date.now()}.json`)
-    const fs = require('fs')
     
     const credData = {
-      api_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.api_key_encrypted)),
-      secret_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.secret_key_encrypted)),
+      api_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.api_key_encrypted as string)),
+      secret_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.secret_key_encrypted as string)),
       provider: 'sinopac'
     }
     
@@ -130,23 +133,23 @@ async function getQuoteFromShioaji(symbol: string, credentials: Record<string, u
       
       if (code === 0 && stdout.trim()) {
         try {
-          const result = JSON.parse(stdout.trim())
+          const result = JSON.parse(stdout.trim()) as Record<string, unknown>
           if (result.success && result.data) {
             // Transform to required format
-            const q = result.data
+            const q = result.data as Record<string, unknown>
             resolve({
-              symbol: q.symbol,
-              symbol_name: q.name || symbol,
-              last_price: parseFloat(q.price?.toFixed(2)) || 0,
-              change: parseFloat(q.change?.toFixed(2)) || 0,
-              change_percent: parseFloat(((q.change / (q.price - q.change)) * 100)?.toFixed(2)) || 0,
-              volume: q.volume || 0,
-              bid_price: parseFloat(q.bid_price?.toFixed(2)) || 0,
-              ask_price: parseFloat(q.ask_price?.toFixed(2)) || 0,
-              updated_at: q.updated_at || new Date().toISOString()
+              symbol: q.symbol as string,
+              symbol_name: (q.name as string) || symbol,
+              last_price: parseFloat((q.price as number)?.toFixed(2)) || 0,
+              change: parseFloat((q.change as number)?.toFixed(2)) || 0,
+              change_percent: parseFloat((((q.change as number) / ((q.price as number) - (q.change as number))) * 100)?.toFixed(2)) || 0,
+              volume: (q.volume as number) || 0,
+              bid_price: parseFloat((q.bid_price as number)?.toFixed(2)) || 0,
+              ask_price: parseFloat((q.ask_price as number)?.toFixed(2)) || 0,
+              updated_at: (q.updated_at as string) || new Date().toISOString()
             })
           } else {
-            reject(new Error(result.error || 'Failed to get quote'))
+            reject(new Error((result.error as string) || 'Failed to get quote'))
           }
         } catch (e) {
           reject(e)

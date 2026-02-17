@@ -1,5 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
+
+import { riskManager } from '@/lib/risk-management'
 import { createClient } from '@/lib/supabase-server'
 
 // POST /api/trade/orders - Place new order
@@ -86,6 +88,29 @@ export async function POST(request: NextRequest) {
     const commission = estimatedAmount ? Math.round(estimatedAmount * 0.001425 * 0.28) : 0
     const tax = action === 'sell' && estimatedAmount ? Math.round(estimatedAmount * 0.003) : 0
     const totalAmount = estimatedAmount ? estimatedAmount + commission + tax : null
+
+    // Risk management checks
+    const riskCheck = await riskManager.checkRiskLimits(user.id, {
+      symbol,
+      action,
+      price: orderPrice,
+      quantity,
+      order_type
+    })
+
+    if (!riskCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'RISK_VIOLATION',
+          message: '風控檢查未通過',
+          risk_blocks: riskCheck.blocks,
+          risk_warnings: riskCheck.warnings,
+          limits_used: riskCheck.limits_used
+        },
+        { status: 400 }
+      )
+    }
 
     // For buy orders, check balance (simplified - in real implementation, query account balance)
     if (action === 'buy' && totalAmount) {
@@ -176,6 +201,11 @@ export async function POST(request: NextRequest) {
         total_amount: totalAmount,
         status: 'submitted',
         created_at: order.ordered_at
+      },
+      risk_info: {
+        risk_level: riskCheck.risk_level,
+        warnings: riskCheck.warnings,
+        limits_used: riskCheck.limits_used
       }
     })
 
