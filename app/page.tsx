@@ -111,6 +111,15 @@ const apps = [
     accentBg: 'rgba(20,184,166,0.08)',
     borderColor: 'rgba(20,184,166,0.25)',
   },
+  {
+    name: 'Rules Dashboard',
+    desc: 'SOP 規則合規性檢查 / 紅綠燈健康狀態',
+    url: '/rules',
+    tag: 'LIVE',
+    accent: '#ef4444',
+    accentBg: 'rgba(239,68,68,0.08)',
+    borderColor: 'rgba(239,68,68,0.25)',
+  },
 ]
 
 // --- SVG Icons (stroke-based, unified style) ---
@@ -214,6 +223,15 @@ function IconGrowth({ color }: { color: string }) {
   )
 }
 
+function IconRules({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Dashboard': IconDashboard,
   'Aurotek Portal': IconAurotek,
@@ -223,6 +241,7 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Reports': IconReports,
   'Travis': IconTravis,
   'Growth': IconGrowth,
+  'Rules Dashboard': IconRules,
 }
 
 // --- Helpers ---
@@ -376,10 +395,16 @@ export default function Home() {
               >
                 {/* Tag */}
                 <span
-                  className="absolute top-4 right-4 text-[10px] px-2 py-0.5 rounded-full border"
+                  className={`absolute top-4 right-4 text-[10px] px-2 py-0.5 rounded-full border ${
+                    app.disabled 
+                      ? 'border-gray-600/30 text-gray-500' 
+                      : ''
+                  }`}
                   style={{
-                    borderColor: app.disabled ? 'rgba(107,114,128,0.3)' : app.borderColor,
-                    color: app.disabled ? '#6b7280' : app.accent,
+                    ...(app.disabled ? {} : {
+                      borderColor: app.borderColor,
+                      color: app.accent,
+                    })
                   }}
                 >
                   {app.tag}
