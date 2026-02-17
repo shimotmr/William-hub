@@ -7,11 +7,35 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const history = searchParams.get('history') === 'true'
+    const category = searchParams.get('category') || 'active'
     
-    const filter = history
-      ? 'status=eq.已完成&order=completed_at.desc'
-      : 'status=neq.已完成&order=created_at.asc'
+    let filter: string
+    
+    switch (category) {
+      case 'active':
+        // 待辦：真正在做或等著做的
+        filter = 'status=in.(待執行,執行中)&order=created_at.asc'
+        break
+      case 'planned':
+        // 規劃中：有想法但還沒排進來
+        filter = 'status=in.(待規劃,中期目標)&order=created_at.asc'
+        break
+      case 'backlog':
+        // 長期：遠期願景
+        filter = 'status=eq.長期目標&order=created_at.asc'
+        break
+      case 'done':
+        // 已完成：歷史記錄
+        filter = 'status=in.(已完成,已關閉)&order=completed_at.desc'
+        break
+      case 'history':
+        // 保持向後相容性
+        filter = 'status=in.(已完成,已關閉)&order=completed_at.desc'
+        break
+      default:
+        // 預設顯示待辦
+        filter = 'status=in.(待執行,執行中)&order=created_at.asc'
+    }
     
     const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?${filter}`, {
       headers: {
