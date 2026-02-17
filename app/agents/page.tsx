@@ -1,15 +1,15 @@
 // ============================================================
-// Agent Control Center v2 — Dynamic from Supabase
+// Agent Control Center v2 — Real-time from board_tasks
 // ============================================================
 'use client'
 
 import {
   Bot, ClipboardList, Search, Palette, PenTool, Microscope,
   Code2, TrendingUp, ChevronRight, Monitor, ArrowLeft,
-  Zap, Activity, Users, Loader2
+  Zap, Activity, Users, Loader2, RefreshCw, AlertCircle
 } from 'lucide-react'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 interface Agent {
   id: string
@@ -26,8 +26,11 @@ interface Agent {
   last_status: string
   last_run_at: string
   currentTask: string | null
+  activeTasks: number
   emoji: string
 }
+
+const POLL_INTERVAL_MS = 30_000 // 30 seconds
 
 const workflows = [
   { name: '開發流程', flow: ['Designer', 'Coder', 'Inspector', 'Travis'], desc: '設計 → 實作 → 審查 → 驗收', color: '#3b82f6' },
@@ -35,7 +38,7 @@ const workflows = [
   { name: '簽核流程', flow: ['Secretary', 'Travis', 'William'], desc: '偵測 → 摘要 → 人工確認', color: '#f59e0b' },
 ]
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, React.ElementType> = {
   Bot, ClipboardList, Search, Palette, PenTool, Microscope, Code2, TrendingUp,
 }
 
@@ -61,26 +64,64 @@ function ArrowRight() {
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [selected, setSelected] = useState<Agent | null>(null)
   const [quoteIdx, setQuoteIdx] = useState(0)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    fetch('/api/agents')
-      .then(res => res.json())
-      .then(data => {
-        // Sort: Travis first, then active, then others
-        const sorted = data.sort((a: Agent, b: Agent) => {
-          if (a.id === 'main') return -1
-          if (b.id === 'main') return 1
-          if (a.status === 'active' && b.status !== 'active') return -1
-          if (b.status === 'active' && a.status !== 'active') return 1
-          return 0
-        })
-        setAgents(sorted)
-        setLoading(false)
+  const selectedRef = useRef<Agent | null>(null)
+  selectedRef.current = selected
+
+  const fetchAgents = useCallback(async (isManual = false) => {
+    if (isManual) setRefreshing(true)
+
+    try {
+      const res = await fetch('/api/agents', { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      const data: Agent[] = await res.json()
+
+      // Sort: Travis first, then active/working, then others
+      const sorted = data.sort((a, b) => {
+        if (a.id === 'main') return -1
+        if (b.id === 'main') return 1
+        if (a.activeTasks > 0 && b.activeTasks === 0) return -1
+        if (b.activeTasks > 0 && a.activeTasks === 0) return 1
+        if (a.status === 'active' && b.status !== 'active') return -1
+        if (b.status === 'active' && a.status !== 'active') return 1
+        return 0
       })
-      .catch(() => setLoading(false))
+
+      setAgents(sorted)
+      setError(null)
+      setLastUpdated(new Date())
+
+      // Keep selected agent in sync with fresh data
+      const currentSelected = selectedRef.current
+      if (currentSelected) {
+        const fresh = sorted.find(a => a.id === currentSelected.id)
+        if (fresh) setSelected(fresh)
+      }
+    } catch (err) {
+      console.error('[AgentsPage] fetch error:', err)
+      setError('無法取得最新資料，顯示上次快取')
+      // Don't clear existing agents on error — show stale data
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
   }, [])
+
+  // Initial load + polling
+  useEffect(() => {
+    fetchAgents()
+    pollingRef.current = setInterval(() => fetchAgents(), POLL_INTERVAL_MS)
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [fetchAgents])
 
   function handleSelect(agent: Agent) {
     if (selected?.id === agent.id) {
@@ -93,7 +134,7 @@ export default function AgentsPage() {
   }
 
   const activeCount = agents.filter(a => a.status === 'active').length
-  const workingCount = agents.filter(a => a.currentTask).length
+  const workingCount = agents.filter(a => a.activeTasks > 0).length
 
   return (
     <main className="min-h-screen bg-background">
@@ -129,7 +170,32 @@ export default function AgentsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Refresh button + last updated */}
+            <div className="flex items-center gap-2">
+              {lastUpdated && (
+                <span className="text-[10px] text-foreground-disabled hidden sm:block">
+                  {lastUpdated.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} 更新
+                </span>
+              )}
+              <button
+                onClick={() => fetchAgents(true)}
+                disabled={refreshing}
+                title="手動刷新"
+                className="p-1.5 rounded-lg border border-border text-foreground-muted hover:text-foreground hover:border-gray-600 transition disabled:opacity-40"
+              >
+                <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </div>
+
+          {/* Error banner */}
+          {error && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-amber-400/80 bg-amber-400/5 border border-amber-400/15 rounded-lg px-3 py-2">
+              <AlertCircle size={12} />
+              {error}
+            </div>
+          )}
         </header>
 
         {/* Loading */}
@@ -146,6 +212,7 @@ export default function AgentsPage() {
               {agents.map((agent) => {
                 const isOff = agent.status !== 'active'
                 const isSel = selected?.id === agent.id
+                const isWorking = agent.activeTasks > 0
                 const color = agent.color || '#6b7280'
 
                 return (
@@ -161,6 +228,14 @@ export default function AgentsPage() {
                       boxShadow: isSel ? `0 0 0 2px ${color}30` : undefined,
                     }}
                   >
+                    {/* Active task badge */}
+                    {isWorking && (
+                      <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-blue-500/15 border border-blue-500/25 rounded-full px-1.5 py-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="text-[9px] font-mono text-blue-400">{agent.activeTasks}</span>
+                      </div>
+                    )}
+
                     {/* Avatar + Name */}
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2.5">
                       <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden shrink-0"
@@ -172,7 +247,7 @@ export default function AgentsPage() {
                           className="object-cover scale-[1.35]"
                         />
                         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#111827] z-10 
-                          ${isOff ? 'bg-gray-600' : agent.currentTask ? 'bg-blue-400 animate-pulse' : 'bg-emerald-400'}`} />
+                          ${isOff ? 'bg-gray-600' : isWorking ? 'bg-blue-400 animate-pulse' : 'bg-emerald-400'}`} />
                       </div>
                       <div className="min-w-0">
                         <div className="font-semibold text-sm text-gray-200 flex items-center gap-1.5">
@@ -188,15 +263,22 @@ export default function AgentsPage() {
                       <div className="text-[11px] text-gray-500 mb-2 line-clamp-1 hidden sm:block">{agent.description}</div>
                     )}
 
-                    {/* Current Task or Role */}
-                    <div className="text-[11px] text-foreground-subtle flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                        isOff ? 'bg-gray-700' : agent.currentTask ? 'bg-blue-500/60' : 'bg-emerald-500/40'
+                    {/* Current Task or idle status */}
+                    <div className="text-[11px] text-foreground-subtle flex items-start gap-1.5">
+                      <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${
+                        isOff ? 'bg-gray-700' : isWorking ? 'bg-blue-500/60' : 'bg-emerald-500/40'
                       }`} />
-                      <span className="truncate">
+                      <span className="truncate leading-relaxed">
                         {agent.currentTask || (isOff ? '離線' : '待命中')}
                       </span>
                     </div>
+
+                    {/* Multiple tasks indicator */}
+                    {agent.activeTasks > 1 && (
+                      <div className="text-[9px] text-blue-400/60 mt-1 ml-3">
+                        +{agent.activeTasks - 1} 個任務執行中
+                      </div>
+                    )}
 
                     {/* Last active */}
                     {agent.last_run_at && (
@@ -281,6 +363,15 @@ export default function AgentsPage() {
             <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span className={`w-2 h-2 rounded-full ${selected.status === 'active' ? 'bg-emerald-400' : 'bg-foreground-disabled'}`} />
               <span className="text-foreground-muted">{selected.model_primary}</span>
+              {selected.activeTasks > 0 && (
+                <>
+                  <span className="text-foreground-disabled">·</span>
+                  <span className="text-blue-400 flex items-center gap-1">
+                    <Zap size={10} />
+                    {selected.activeTasks} 個任務執行中
+                  </span>
+                </>
+              )}
               <span className="text-foreground-disabled">·</span>
               <span className={selected.currentTask ? 'text-blue-400' : 'text-foreground-muted'}>
                 {selected.currentTask || '待命中'}
@@ -335,7 +426,7 @@ export default function AgentsPage() {
 
         {/* Footer */}
         <footer className="text-center text-[11px] text-foreground-subtle py-4">
-          Agent Control Center v2 · Powered by Supabase
+          Agent Control Center v2 · Live from board_tasks · 每 30 秒自動刷新
         </footer>
       </div>
     </main>
