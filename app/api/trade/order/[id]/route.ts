@@ -159,7 +159,7 @@ async function simulateOrderCancellation(_shioajiOrderId?: string): Promise<{suc
 /**
  * Log order-related events for audit purposes
  */
-async function logOrderEvent(userId: string, eventType: string, eventData: any) {
+async function logOrderEvent(userId: string, eventType: string, eventData: Record<string, unknown>) {
   try {
     // In a real implementation, you might want to log to a separate audit table
     // TODO: 實現正確的審計日誌記錄

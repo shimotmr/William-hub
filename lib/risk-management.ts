@@ -282,19 +282,14 @@ export class RiskManager {
     if (!orders) return 0
 
     let netShares = 0
-    let _totalCost = 0
 
     orders.forEach(order => {
       const shares = order.quantity
-      const price = order.filled_price || order.price || 0
-      const cost = shares * price * 1000
 
       if (order.action === 'buy') {
         netShares += shares
-        _totalCost += cost
       } else {
         netShares -= shares
-        _totalCost -= cost
       }
     })
 
