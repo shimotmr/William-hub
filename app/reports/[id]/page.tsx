@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
 // --- Types ---
@@ -254,7 +255,7 @@ export default function ReportDetailPage({
           <article className="prose-dark">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]} 
-              rehypePlugins={[rehypeHighlight]}
+              rehypePlugins={[rehypeRaw, rehypeHighlight]}
             >
               {report.md_content || '_No content available_'}
             </ReactMarkdown>
