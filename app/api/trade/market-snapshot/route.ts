@@ -1,11 +1,14 @@
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
-import { ShioajiClient } from '@/lib/shioaji-client'
-import { CredentialEncryption } from '@/lib/encryption'
 import { spawn } from 'child_process'
-import path from 'path'
 import fs from 'fs'
+import path from 'path'
+
+import { NextRequest, NextResponse } from 'next/server'
+
+import { CredentialEncryption } from '@/lib/encryption'
+import { ShioajiClient } from '@/lib/shioaji-client'
+import { createClient } from '@/lib/supabase-server'
+
 
 // GET /api/trade/market-snapshot - Get market overview (TWS index)
 export async function GET(_request: NextRequest) {
@@ -78,8 +81,8 @@ async function getMarketSnapshotFromShioaji(credentials: Record<string, unknown>
     const tempCredPath = path.join(process.env.HOME || '', '.openclaw', 'temp', `shioaji_market_${Date.now()}.json`)
     
     const credData = {
-      api_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.api_key_encrypted)),
-      secret_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.secret_key_encrypted)),
+      api_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.api_key_encrypted as string)),
+      secret_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.secret_key_encrypted as string)),
       provider: 'sinopac'
     }
     
@@ -118,7 +121,7 @@ async function getMarketSnapshotFromShioaji(credentials: Record<string, unknown>
             // Return mock if Shioaji fails
             resolve(getMockMarketSnapshot())
           }
-        } catch (e) {
+        } catch (_e) {
           resolve(getMockMarketSnapshot())
         }
       } else {
