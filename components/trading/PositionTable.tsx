@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import { ChevronUp, ChevronDown, TrendingUp, BarChart3, ShoppingCart, ArrowUpDown } from 'lucide-react'
-import { StockPrice } from './StockPrice'
+import { useState } from 'react'
+
 import { PercentageBadge } from './PercentageBadge'
+import { StockPrice } from './StockPrice'
+
 import { cn } from '@/lib/utils'
 
 export interface Position {
@@ -246,17 +248,17 @@ function PositionTableRow({
     <tr className="border-b border-slate-800 hover:bg-slate-800/20 transition-colors">
       <td className="px-6 py-4">
         <div>
-          <div className="font-mono font-bold text-slate-100">{position.symbol}</div>
+          <div className="font-mono font-variant-numeric: tabular-nums font-bold text-slate-100">{position.symbol}</div>
           <div className="text-sm text-slate-400">{position.symbol_name}</div>
         </div>
       </td>
       <td className="px-6 py-4 text-right">
-        <span className="font-mono text-slate-300">
+        <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
           {position.quantity.toLocaleString()} 張
         </span>
       </td>
       <td className="px-6 py-4 text-right">
-        <span className="font-mono text-slate-400">
+        <span className="font-mono font-variant-numeric: tabular-nums text-slate-400">
           {position.avg_cost.toFixed(2)}
         </span>
       </td>
@@ -269,7 +271,7 @@ function PositionTableRow({
         />
       </td>
       <td className="px-6 py-4 text-right">
-        <span className="font-mono font-semibold text-slate-100">
+        <span className="font-mono font-variant-numeric: tabular-nums font-semibold text-slate-100">
           {formatCurrency(position.market_value)}
         </span>
       </td>
@@ -325,11 +327,11 @@ function PositionMobileCard({
       {/* 標題行 */}
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-mono font-bold text-slate-100 text-lg">{position.symbol}</div>
+          <div className="font-mono font-variant-numeric: tabular-nums font-bold text-slate-100 text-lg">{position.symbol}</div>
           <div className="text-sm text-slate-400">{position.symbol_name}</div>
         </div>
         <div className="text-right">
-          <div className="font-mono font-semibold text-slate-100">
+          <div className="font-mono font-variant-numeric: tabular-nums font-semibold text-slate-100">
             {formatCurrency(position.market_value)}
           </div>
           <div className="text-sm text-slate-400">市值</div>
@@ -340,11 +342,11 @@ function PositionMobileCard({
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <div className="text-slate-400">數量</div>
-          <div className="font-mono text-slate-300">{position.quantity.toLocaleString()} 張</div>
+          <div className="font-mono font-variant-numeric: tabular-nums text-slate-300">{position.quantity.toLocaleString()} 張</div>
         </div>
         <div>
           <div className="text-slate-400">成本價</div>
-          <div className="font-mono text-slate-300">{position.avg_cost.toFixed(2)}</div>
+          <div className="font-mono font-variant-numeric: tabular-nums text-slate-300">{position.avg_cost.toFixed(2)}</div>
         </div>
         <div>
           <div className="text-slate-400">現價</div>

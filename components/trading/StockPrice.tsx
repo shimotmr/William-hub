@@ -7,6 +7,7 @@ interface StockPriceProps {
   change?: number
   size?: 'sm' | 'md' | 'lg'
   showChange?: boolean
+  showThousands?: boolean
   className?: string
 }
 
@@ -19,6 +20,7 @@ export function StockPrice({
   change, 
   size = 'md',
   showChange = true,
+  showThousands = false,
   className 
 }: StockPriceProps) {
   const sizeClasses = {
@@ -34,11 +36,16 @@ export function StockPrice({
   }
 
   const changeColor = getChangeColor(change)
+  
+  // Format price with thousands separator
+  const formatPrice = (value: number) => {
+    return showThousands ? value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : value.toFixed(2)
+  }
 
   return (
-    <div className={cn('font-mono', className)}>
+    <div className={cn('font-mono font-variant-numeric: tabular-nums', className)}>
       <span className={cn('font-semibold', changeColor, sizeClasses[size])}>
-        {price.toFixed(2)}
+        {formatPrice(price)}
       </span>
       {showChange && change !== undefined && (
         <span className={cn('ml-1 text-xs', changeColor)}>
