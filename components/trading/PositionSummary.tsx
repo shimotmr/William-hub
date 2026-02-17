@@ -1,8 +1,10 @@
 'use client'
 
 import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react'
-import { StockPrice } from './StockPrice'
+
 import { PercentageBadge } from './PercentageBadge'
+import { StockPrice } from './StockPrice'
+
 import { cn } from '@/lib/utils'
 
 interface PositionSummaryData {
@@ -46,7 +48,7 @@ export function PositionSummary({ data, isLoading = false, className }: Position
           </div>
           <div>
             <h3 className="text-sm font-medium text-slate-400">總市值</h3>
-            <p className="text-xl font-bold text-slate-100 font-mono">
+            <p className="text-xl font-bold text-slate-100 font-mono font-variant-numeric: tabular-nums">
               {formatCurrency(total_market_value)}
             </p>
           </div>
@@ -61,7 +63,7 @@ export function PositionSummary({ data, isLoading = false, className }: Position
           </div>
           <div>
             <h3 className="text-sm font-medium text-slate-400">總成本</h3>
-            <p className="text-xl font-bold text-slate-100 font-mono">
+            <p className="text-xl font-bold text-slate-100 font-mono font-variant-numeric: tabular-nums">
               {formatCurrency(total_cost)}
             </p>
           </div>
@@ -117,7 +119,7 @@ export function PositionSummary({ data, isLoading = false, className }: Position
                 size="md" 
                 className="text-lg font-bold"
               />
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 font-variant-numeric: tabular-nums">
                 {total_positions} 檔持股
               </p>
             </div>

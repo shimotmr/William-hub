@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
+import { useState, useEffect } from 'react'
+
 import OrderConfirmDialog from './OrderConfirmDialog'
 
 interface OrderFormData {
@@ -47,10 +48,14 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
     quantity: 1
   })
 
+  // Validation errors
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  
   const [currentStock, setCurrentStock] = useState<StockData | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   // 搜尋股票建議
   const suggestions = Object.values(mockStocks).filter(stock =>
@@ -95,6 +100,53 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
 
   const estimate = calculateEstimate()
 
+  // 表單驗證
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
+    
+    // 股票代號驗證
+    if (!orderData.symbol) {
+      newErrors.symbol = '請選擇股票代號'
+    }
+    
+    // 價格驗證（限價單）
+    if (orderData.orderType === 'limit') {
+      if (!orderData.price || orderData.price <= 0) {
+        newErrors.price = '請輸入有效的價格'
+      } else if (orderData.price < 0.01) {
+        newErrors.price = '價格最低為 0.01 元'
+      } else if (orderData.price > 10000) {
+        newErrors.price = '價格最高為 10000 元'
+      }
+    }
+    
+    // 數量驗證
+    if (!orderData.quantity || orderData.quantity <= 0) {
+      newErrors.quantity = '請輸入有效的數量'
+    } else {
+      if (orderData.shareType === 'lot') {
+        // 整股：1-999張
+        if (orderData.quantity > 999) {
+          newErrors.quantity = '單筆委託最多 999 張'
+        }
+        if (orderData.quantity < 1) {
+          newErrors.quantity = '最少委託 1 張'
+        }
+      } else {
+        // 零股：1-999股
+        if (orderData.quantity > 999) {
+          newErrors.quantity = '零股委託最多 999 股'
+        }
+        if (orderData.quantity < 1) {
+          newErrors.quantity = '最少委託 1 股'
+        }
+      }
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleStockSelect = (stock: StockData) => {
     setOrderData(prev => ({
       ...prev,
@@ -104,12 +156,26 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
     }))
     setSearchInput(`${stock.symbol} ${stock.name}`)
     setShowSuggestions(false)
+    // Clear error when selecting stock
+    setErrors(prev => ({ ...prev, symbol: '' }))
+    setTouched(prev => ({ ...prev, symbol: true }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (currentStock && orderData.quantity > 0) {
+    // Mark all fields as touched
+    setTouched({ symbol: true, price: true, quantity: true })
+    
+    if (validateForm()) {
       setShowConfirm(true)
+    }
+  }
+
+  // 處理輸入變更並清除對應的錯誤
+  const handleInputChange = (field: string, value: number) => {
+    setOrderData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
@@ -153,11 +219,18 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
               onChange={(e) => {
                 setSearchInput(e.target.value)
                 setShowSuggestions(e.target.value.length > 0)
+                // Clear error when typing
+                if (errors.symbol) {
+                  setErrors(prev => ({ ...prev, symbol: '' }))
+                }
               }}
+              onBlur={() => setTouched(prev => ({ ...prev, symbol: true }))}
               placeholder="輸入股票代號或名稱"
-              className="block w-full pl-10 pr-3 py-2 border border-slate-700 rounded-lg 
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg 
                          bg-slate-800 text-slate-100 placeholder-slate-500
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                           touched.symbol && errors.symbol ? 'border-red-500' : 'border-slate-700'
+                         }`}
             />
             
             {/* 搜尋建議 */}
@@ -176,7 +249,7 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
                       <span className="ml-2 text-slate-400">{stock.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-mono text-slate-100">{stock.currentPrice.toFixed(2)}</div>
+                      <div className="font-mono text-slate-100 font-variant-numeric: tabular-nums">{stock.currentPrice.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       <div className={`text-xs ${stock.change >= 0 ? 'text-red-400' : 'text-green-400'}`}>
                         {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
                       </div>
@@ -184,6 +257,9 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
                   </button>
                 ))}
               </div>
+            )}
+            {touched.symbol && errors.symbol && (
+              <p className="text-red-400 text-xs mt-1">{errors.symbol}</p>
             )}
           </div>
         </div>
@@ -197,8 +273,8 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
                 <div className="text-sm text-slate-400">成交量: {currentStock.volume.toLocaleString()}</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-slate-100 font-mono">
-                  {currentStock.currentPrice.toFixed(2)}
+                <div className="text-xl font-bold text-slate-100 font-mono font-variant-numeric: tabular-nums">
+                  {currentStock.currentPrice.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className={`text-sm font-medium ${
                   currentStock.change > 0 ? 'text-red-400' : 
@@ -306,12 +382,18 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
               type="number"
               step="0.01"
               value={orderData.price || ''}
-              onChange={(e) => setOrderData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-              className="block w-full px-3 py-2 border border-slate-700 rounded-lg 
-                         bg-slate-800 text-slate-100 font-mono
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+              onBlur={() => setTouched(prev => ({ ...prev, price: true }))}
+              className={`block w-full px-3 py-2 border rounded-lg 
+                         bg-slate-800 text-slate-100 font-mono font-variant-numeric: tabular-nums
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                           touched.price && errors.price ? 'border-red-500' : 'border-slate-700'
+                         }`}
               placeholder="0.00"
             />
+            {touched.price && errors.price && (
+              <p className="text-red-400 text-xs mt-1">{errors.price}</p>
+            )}
           </div>
         )}
 
@@ -324,12 +406,18 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
             type="number"
             min="1"
             value={orderData.quantity || ''}
-            onChange={(e) => setOrderData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
-            className="block w-full px-3 py-2 border border-slate-700 rounded-lg 
-                       bg-slate-800 text-slate-100 font-mono
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
+            onBlur={() => setTouched(prev => ({ ...prev, quantity: true }))}
+            className={`block w-full px-3 py-2 border rounded-lg 
+                       bg-slate-800 text-slate-100 font-mono font-variant-numeric: tabular-nums
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                         touched.quantity && errors.quantity ? 'border-red-500' : 'border-slate-700'
+                       }`}
             placeholder="1"
           />
+          {touched.quantity && errors.quantity && (
+            <p className="text-red-400 text-xs mt-1">{errors.quantity}</p>
+          )}
           {orderData.shareType === 'lot' && (
             <p className="text-xs text-slate-500">1張 = 1,000股</p>
           )}
@@ -342,28 +430,28 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-400">股數:</span>
-                <span className="text-slate-300 font-mono">
+                <span className="text-slate-300 font-mono font-variant-numeric: tabular-nums">
                   {(orderData.shareType === 'lot' ? orderData.quantity * 1000 : orderData.quantity).toLocaleString()} 股
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">單價:</span>
-                <span className="text-slate-300 font-mono">
-                  {(orderData.orderType === 'market' ? currentStock.currentPrice : orderData.price).toFixed(2)}
+                <span className="text-slate-300 font-mono font-variant-numeric: tabular-nums">
+                  {(orderData.orderType === 'market' ? currentStock.currentPrice : orderData.price).toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">市值:</span>
-                <span className="text-slate-300 font-mono">{estimate.amount.toLocaleString()}</span>
+                <span className="text-slate-300 font-mono font-variant-numeric: tabular-nums">{estimate.amount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">手續費:</span>
-                <span className="text-slate-300 font-mono">{estimate.commission.toLocaleString()}</span>
+                <span className="text-slate-300 font-mono font-variant-numeric: tabular-nums">{estimate.commission.toLocaleString()}</span>
               </div>
               {estimate.tax > 0 && (
                 <div className="flex justify-between">
                   <span className="text-slate-400">證交稅:</span>
-                  <span className="text-slate-300 font-mono">{estimate.tax.toLocaleString()}</span>
+                  <span className="text-slate-300 font-mono font-variant-numeric: tabular-nums">{estimate.tax.toLocaleString()}</span>
                 </div>
               )}
               <div className="border-t border-slate-600 pt-2">
@@ -371,7 +459,7 @@ export default function OrderForm({ onOrderSubmit }: OrderFormProps) {
                   <span className="text-slate-300 font-medium">
                     {orderData.action === 'buy' ? '實付金額:' : '實收金額:'}
                   </span>
-                  <span className="text-slate-100 font-bold font-mono text-lg">
+                  <span className="text-slate-100 font-bold font-mono font-variant-numeric: tabular-nums text-lg">
                     {estimate.total.toLocaleString()}
                   </span>
                 </div>

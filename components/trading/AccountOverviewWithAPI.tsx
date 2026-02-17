@@ -1,12 +1,13 @@
 'use client'
 
-import { TrendingUp, TrendingDown, Wallet, PieChart } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { TrendingUp, TrendingDown, Wallet, PieChart } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
 
 import { PercentageBadge } from './PercentageBadge'
 import { StockPrice } from './StockPrice'
+
+import { cn } from '@/lib/utils'
 
 interface BalanceData {
   cash_balance: number
@@ -189,7 +190,7 @@ export function AccountOverviewWithAPI({ className }: AccountOverviewWithAPIProp
         {/* 現金餘額 */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-slate-400">現金餘額</span>
-          <span className="font-mono text-slate-300">
+          <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
             {formatCurrency(balance.cash_balance)}
           </span>
         </div>
@@ -197,7 +198,7 @@ export function AccountOverviewWithAPI({ className }: AccountOverviewWithAPIProp
         {/* 持倉市值 */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-slate-400">持倉市值</span>
-          <span className="font-mono text-slate-300">
+          <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
             {formatCurrency(balance.total_market_value)}
           </span>
         </div>
@@ -205,7 +206,7 @@ export function AccountOverviewWithAPI({ className }: AccountOverviewWithAPIProp
         {/* 總成本 */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-slate-400">持倉成本</span>
-          <span className="font-mono text-slate-300">
+          <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
             {formatCurrency(balance.total_cost)}
           </span>
         </div>
@@ -218,13 +219,13 @@ export function AccountOverviewWithAPI({ className }: AccountOverviewWithAPIProp
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-400">融資可用</span>
-              <span className="font-mono text-slate-300">
+              <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
                 {formatCurrency(balance.margin_available)}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-400">融券可用</span>
-              <span className="font-mono text-slate-300">
+              <span className="font-mono font-variant-numeric: tabular-nums text-slate-300">
                 {formatCurrency(balance.short_available)}
               </span>
             </div>
