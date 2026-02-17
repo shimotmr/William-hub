@@ -17,6 +17,8 @@ type Task = {
   updated_at: string
   completed_at: string | null
   acceptance_criteria: string | null
+  recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly' | null
+  next_run_at: string | null
 }
 
 // SVG Icon Components
@@ -86,6 +88,26 @@ function IconSquare({ color }: { color: string }) {
   )
 }
 
+function IconRepeat({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m17 1 4 4-4 4" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d="m7 23-4-4 4-4" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  )
+}
+
+function IconClock({ color }: { color: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  )
+}
+
 const priorityMap: Record<string, { icon: (c: string) => React.ReactNode; color: string; label: string }> = {
   '🔴': { icon: (c) => <IconFlag color={c} />, color: '#ef4444', label: '緊急' },
   '🟡': { icon: (c) => <IconCircle color={c} />, color: '#f59e0b', label: '短期' },
@@ -118,6 +140,30 @@ function formatDateFull(d: string) {
   return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`
 }
 
+function formatNextRunDate(dateStr: string | null) {
+  if (!dateStr) return '未設定'
+  
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = date.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  
+  const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  
+  if (diffDays <= 0) return `今天 ${timeStr}`
+  if (diffDays === 1) return `明天 ${timeStr}`
+  if (diffDays <= 7) return `${diffDays}天後 ${timeStr}`
+  
+  return `${date.getMonth() + 1}/${date.getDate()} ${timeStr}`
+}
+
+const recurrenceLabels: Record<string, string> = {
+  'daily': '每日',
+  'weekly': '每週',
+  'monthly': '每月',
+  'none': '無'
+}
+
 function IconChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -127,6 +173,136 @@ function IconChevron({ open }: { open: boolean }) {
     >
       <polyline points="9 18 15 12 9 6" />
     </svg>
+  )
+}
+
+function RecurringTaskCard({ task }: { task: Task }) {
+  const [expanded, setExpanded] = useState(false)
+  const statusStyle = statusColors[task.status] || statusColors['待執行']
+  const p = priorityMap[task.priority] || priorityMap['⚪']
+  const hasDesc = !!task.description?.trim()
+  const hasResult = !!task.result?.trim()
+  const hasCriteria = !!task.acceptance_criteria?.trim()
+  const expandable = hasDesc || hasResult || hasCriteria
+  
+  const isOverdue = task.next_run_at && new Date(task.next_run_at) < new Date()
+  const recurrenceType = task.recurrence_type || 'none'
+
+  return (
+    <div
+      className={`group rounded-xl border p-4 transition-all duration-200 ${expandable ? 'cursor-pointer' : ''}`}
+      style={{
+        borderColor: isOverdue ? 'rgba(239, 68, 68, 0.45)' : expanded ? 'rgba(55, 65, 81, 0.7)' : 'rgba(139, 92, 246, 0.5)',
+        background: isOverdue ? 'rgba(239, 68, 68, 0.06)' : expanded ? 'rgba(17, 24, 39, 0.5)' : 'rgba(139, 92, 246, 0.1)',
+      }}
+      onClick={() => expandable && setExpanded(!expanded)}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.6)'
+        e.currentTarget.style.backgroundColor = 'rgba(17, 24, 39, 0.4)'
+        e.currentTarget.style.transform = 'translateY(-1px)'
+      }}
+      onMouseLeave={(e) => {
+        if (!expanded) {
+          e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)'
+          e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.1)'
+        }
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          {p.icon(p.color)}
+          <span className="text-[10px] font-medium" style={{ color: p.color }}>{p.label}</span>
+        </div>
+        <div
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full"
+          style={{ background: statusStyle.bg, color: statusStyle.text }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusStyle.dot }} />
+          <span>{task.status}</span>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-1.5 mb-3">
+        {expandable && (
+          <span className="mt-0.5 flex-shrink-0 text-gray-600">
+            <IconChevron open={expanded} />
+          </span>
+        )}
+        <h3 className="text-sm font-medium leading-snug text-gray-200">
+          <span className="text-gray-600 font-mono text-xs mr-1.5">#{task.id}</span>
+          {task.title}
+        </h3>
+      </div>
+
+      {/* 週期性資訊 */}
+      <div className="mb-3 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-violet-400">
+            <IconRepeat color="#a78bfa" />
+            <span className="font-medium">{recurrenceLabels[recurrenceType]}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-cyan-400">
+          <IconClock color="#67e8f9" />
+          <span className={`font-medium ${isOverdue ? 'text-red-400' : ''}`}>
+            {formatNextRunDate(task.next_run_at)}
+          </span>
+        </div>
+      </div>
+
+      {/* Expandable description + result */}
+      {expandable && expanded && (
+        <div className="mb-3 ml-5 pl-3 border-l-2 border-gray-700/50 space-y-2">
+          {hasDesc && (
+            <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap">
+              {task.description}
+            </p>
+          )}
+          {hasCriteria && (
+            <div className="pt-1.5 border-t border-gray-700/30">
+              <span className="text-[10px] font-medium text-cyan-500/70 uppercase tracking-wider">驗收標準</span>
+              <ul className="mt-1.5 space-y-1">
+                {task.acceptance_criteria!.split('\n').filter(l => l.trim()).map((line, i) => {
+                  const text = line.replace(/^[-*•]\s*/, '').replace(/^\[[ x]?\]\s*/i, '')
+                  const checked = /^\[x\]/i.test(line.trim())
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-xs text-gray-400">
+                      <span className={`mt-0.5 flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center ${checked ? 'border-emerald-500/50 bg-emerald-500/20' : 'border-gray-600'}`}>
+                        {checked && <IconCheck color="#34d399" />}
+                      </span>
+                      <span className={checked ? 'line-through text-gray-500' : ''}>{text}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+          {hasResult && (
+            <div className="pt-1.5 border-t border-gray-700/30">
+              <span className="text-[10px] font-medium text-emerald-500/70 uppercase tracking-wider">完成回報</span>
+              <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-wrap mt-1">
+                {task.result}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span>{task.assignee}</span>
+          {isOverdue && <span className="text-red-400 font-medium">逾期</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-600" title={formatDateFull(task.created_at)}>{formatDate(task.created_at)}</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -304,9 +480,10 @@ export default function BoardPage() {
   const [activeTasks, setActiveTasks] = useState<Task[]>([])
   const [plannedTasks, setPlannedTasks] = useState<Task[]>([])
   const [backlogTasks, setBacklogTasks] = useState<Task[]>([])
+  const [recurringTasks, setRecurringTasks] = useState<Task[]>([])
   const [doneTasks, setDoneTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'active' | 'planned' | 'backlog' | 'done'>('active')
+  const [tab, setTab] = useState<'active' | 'planned' | 'backlog' | 'recurring' | 'done'>('active')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // 預設降序（新的在上）
 
   // 排序函數
@@ -323,12 +500,14 @@ export default function BoardPage() {
       fetch('/api/board?category=active').then((r) => r.json()),
       fetch('/api/board?category=planned').then((r) => r.json()),
       fetch('/api/board?category=backlog').then((r) => r.json()),
+      fetch('/api/board?category=recurring').then((r) => r.json()),
       fetch('/api/board?category=done').then((r) => r.json()),
     ])
-      .then(([active, planned, backlog, done]) => {
+      .then(([active, planned, backlog, recurring, done]) => {
         if (Array.isArray(active)) setActiveTasks(active)
         if (Array.isArray(planned)) setPlannedTasks(planned)
         if (Array.isArray(backlog)) setBacklogTasks(backlog)
+        if (Array.isArray(recurring)) setRecurringTasks(recurring)
         if (Array.isArray(done)) setDoneTasks(done)
         setLoading(false)
       })
@@ -396,6 +575,16 @@ export default function BoardPage() {
                 長期 ({backlogTasks.length})
               </button>
               <button
+                onClick={() => setTab('recurring')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  tab === 'recurring'
+                    ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                    : 'text-foreground-muted hover:text-foreground border border-transparent'
+                }`}
+              >
+                週期性 ({recurringTasks.length})
+              </button>
+              <button
                 onClick={() => setTab('done')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   tab === 'done'
@@ -425,7 +614,72 @@ export default function BoardPage() {
           const currentTasks = tab === 'active' ? activeTasks
                              : tab === 'planned' ? plannedTasks
                              : tab === 'backlog' ? backlogTasks
+                             : tab === 'recurring' ? recurringTasks
                              : doneTasks
+
+          if (tab === 'recurring') {
+            // 週期性任務使用特殊排序（按 next_run_at 排序）
+            const sortedRecurringTasks = [...recurringTasks].sort((a, b) => {
+              const dateA = a.next_run_at ? new Date(a.next_run_at).getTime() : Infinity
+              const dateB = b.next_run_at ? new Date(b.next_run_at).getTime() : Infinity
+              return dateA - dateB
+            })
+            
+            const agentRecurring = sortedRecurringTasks.filter((t) => t.board === 'agent')
+            const williamRecurring = sortedRecurringTasks.filter((t) => t.board === 'william')
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  className="flex-1 min-w-0 rounded-xl border p-4 sm:p-5"
+                  style={{
+                    borderColor: '#8b5cf633',
+                    background: '#8b5cf60D',
+                  }}
+                >
+                  <div
+                    className="flex items-center gap-2 mb-4 pb-3 border-b"
+                    style={{ borderColor: '#8b5cf633' }}
+                  >
+                    <div className="flex-shrink-0"><IconRobot color="#3b82f6" /></div>
+                    <h2 className="text-base font-semibold text-gray-200">Travis 看板</h2>
+                    <span className="ml-auto text-xs text-gray-600 font-medium">{agentRecurring.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {agentRecurring.length === 0 ? (
+                      <div className="text-center text-gray-600 text-sm py-8">無週期性任務</div>
+                    ) : (
+                      agentRecurring.map((task) => <RecurringTaskCard key={task.id} task={task} />)
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className="flex-1 min-w-0 rounded-xl border p-4 sm:p-5"
+                  style={{
+                    borderColor: '#8b5cf633',
+                    background: '#8b5cf60D',
+                  }}
+                >
+                  <div
+                    className="flex items-center gap-2 mb-4 pb-3 border-b"
+                    style={{ borderColor: '#8b5cf633' }}
+                  >
+                    <div className="flex-shrink-0"><IconUser color="#f59e0b" /></div>
+                    <h2 className="text-base font-semibold text-gray-200">William 看板</h2>
+                    <span className="ml-auto text-xs text-gray-600 font-medium">{williamRecurring.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {williamRecurring.length === 0 ? (
+                      <div className="text-center text-gray-600 text-sm py-8">無週期性任務</div>
+                    ) : (
+                      williamRecurring.map((task) => <RecurringTaskCard key={task.id} task={task} />)
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          }
 
           const sortedTasks = sortTasks(currentTasks)
           const agentTasks = sortedTasks.filter((t) => t.board === 'agent')
