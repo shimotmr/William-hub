@@ -97,6 +97,7 @@ const statusColors: Record<string, { bg: string; text: string; dot: string }> = 
   '待執行': { bg: 'rgba(107, 114, 128, 0.15)', text: '#9ca3af', dot: '#6b7280' },
   '執行中': { bg: 'rgba(59, 130, 246, 0.15)', text: '#60a5fa', dot: '#3b82f6' },
   '已完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
+  '已關閉': { bg: 'rgba(107, 114, 128, 0.15)', text: '#9ca3af', dot: '#6b7280' },
   '完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
   '✅完成': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', dot: '#10b981' },
   '等待': { bg: 'rgba(245, 158, 11, 0.15)', text: '#fbbf24', dot: '#f59e0b' },
@@ -181,7 +182,13 @@ function TaskCard({ task, isHistory }: { task: Task; isHistory?: boolean }) {
           </span>
         )}
         <h3
-          className={`text-sm font-medium leading-snug ${isHistory ? 'line-through text-gray-500' : 'text-gray-200'}`}
+          className={`text-sm font-medium leading-snug ${
+            isHistory && task.status === '已完成' 
+              ? 'line-through text-gray-500' 
+              : isHistory 
+                ? 'text-gray-400' 
+                : 'text-gray-200'
+          }`}
           title={hasDesc ? task.description! : undefined}
         >
           <span className="text-gray-600 font-mono text-xs mr-1.5">#{task.id}</span>
@@ -283,7 +290,7 @@ function BoardColumn({
       <div className="space-y-3">
         {tasks.length === 0 ? (
           <div className="text-center text-gray-600 text-sm py-8">
-            {isHistory ? '尚無已完成任務' : '無任務'}
+            {isHistory ? '尚無歷史任務' : '無任務'}
           </div>
         ) : (
           tasks.map((task) => <TaskCard key={task.id} task={task} isHistory={isHistory} />)
@@ -385,7 +392,7 @@ export default function BoardPage() {
                   : 'text-foreground-muted hover:text-foreground border border-transparent'
               }`}
             >
-              已完成 ({doneTasks.length})
+              歷史 ({doneTasks.length})
             </button>
           </div>
         </header>
@@ -405,7 +412,7 @@ export default function BoardPage() {
           if (tab === 'done') {
             return (
               <BoardColumn
-                title="已完成任務"
+                title="歷史任務"
                 icon={<IconHistory color="#10b981" />}
                 tasks={currentTasks}
                 accentColor="#10b981"
