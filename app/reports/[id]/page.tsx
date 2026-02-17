@@ -3,11 +3,12 @@
 // ============================================================
 'use client'
 
+import html2pdf from 'html2pdf.js'
 import {
-  ArrowLeft, User, Calendar, FileText, Loader2, Tag,
+  ArrowLeft, User, Calendar, FileText, Loader2, Tag, Download,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -42,9 +43,11 @@ export default function ReportDetailPage({
   params: { id: string } 
 }) {
   const router = useRouter()
+  const contentRef = useRef<HTMLDivElement>(null)
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [downloading, setDownloading] = useState(false)
 
   // Fetch report detail
   useEffect(() => {
@@ -78,6 +81,30 @@ export default function ReportDetailPage({
 
     fetchReport()
   }, [params.id])
+
+  // PDF download handler
+  const handleDownloadPDF = async () => {
+    if (!contentRef.current || !report) return
+    
+    setDownloading(true)
+    try {
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+      }
+      
+      await html2pdf().set(opt).from(contentRef.current).save()
+    } catch (err) {
+      console.error('Error generating PDF:', err)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   // Loading state
   if (loading) {
@@ -150,12 +177,26 @@ export default function ReportDetailPage({
           <ArrowLeft size={18} />
         </button>
         <FileText size={18} className="text-blue-400" />
-        <h1 className="text-sm font-semibold text-foreground">Report Detail</h1>
+        <h1 className="text-sm font-semibold text-foreground flex-1">Report Detail</h1>
+        
+        {/* Download PDF button */}
+        <button
+          onClick={handleDownloadPDF}
+          disabled={downloading || !report}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg transition-colors"
+        >
+          {downloading ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Download size={14} />
+          )}
+          <span className="hidden sm:inline">PDF</span>
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[800px] mx-auto px-6 sm:px-8 py-8 sm:py-12">
+        <div ref={contentRef} className="max-w-[800px] mx-auto px-6 sm:px-8 py-8 sm:py-12">
           {/* Report Header */}
           <div className="mb-8">
             <div className="flex items-start justify-between gap-4 mb-4">
