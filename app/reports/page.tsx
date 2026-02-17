@@ -14,13 +14,15 @@ import remarkGfm from 'remark-gfm'
 
 // --- Types ---
 interface Report {
-  id: number
+  id: number | string
   title: string
   date: string
   author: string
   type: 'md' | 'doc' | 'pdf'
   doc_url: string | null
   pdf_url: string | null
+  pdf_exists?: boolean
+  pdf_size?: number | null
   export_status: string | null
   content?: string
   md_content?: string
@@ -45,7 +47,7 @@ function ExportDownloadButton({
   label: string
   icon: typeof FileDown
   format: 'pdf' | 'markdown'
-  reportId: number
+  reportId: number | string
 }) {
   const [loading, setLoading] = useState(false)
 
@@ -92,6 +94,75 @@ function ExportDownloadButton({
     >
       {loading ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />}
       {label}
+    </button>
+  )
+}
+
+// --- Format file size ---
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// --- PDF Download Button ---
+function PdfDownloadButton({
+  reportId,
+  pdfSize,
+}: {
+  reportId: number | string
+  pdfSize?: number | null
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+
+  // Extract numeric ID from supabase_ prefixed IDs
+  const numericId = String(reportId).replace(/^supabase_/, '')
+
+  const handleDownload = async () => {
+    setLoading(true)
+    setError(false)
+    try {
+      const res = await fetch(`/api/reports/${numericId}/pdf`)
+      if (!res.ok) {
+        setError(true)
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition') || ''
+      const match = disposition.match(/filename="(.+)"/)
+      a.download = match ? match[1] : `report-${numericId}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={loading}
+      title={error ? '下載失敗，請再試' : pdfSize ? `PDF (${formatFileSize(pdfSize)})` : 'Download PDF'}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-white/5 disabled:opacity-60 disabled:cursor-not-allowed"
+      style={{
+        border: `1px solid ${error ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.3)'}`,
+        color: error ? '#f87171' : '#fca5a5',
+        background: error ? 'rgba(239,68,68,0.08)' : undefined,
+      }}
+    >
+      {loading
+        ? <Loader2 size={14} className="animate-spin" />
+        : <FileDown size={14} />
+      }
+      {error ? '下載失敗' : loading ? '下載中...' : `📄 下載 PDF${pdfSize ? ` (${formatFileSize(pdfSize)})` : ''}`}
     </button>
   )
 }
@@ -143,11 +214,11 @@ function ReportCard({
             <Loader2 size={10} className="animate-spin text-amber-400" />
             <span className="text-amber-400">Export...</span>
           </>
-        ) : hasExport ? (
+        ) : hasExport || report.pdf_exists ? (
           <>
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
             <span className="text-emerald-400">
-              {[report.doc_url && 'Doc', report.pdf_url && 'PDF'].filter(Boolean).join(' / ')}
+              {[report.doc_url && 'Doc', (report.pdf_url || report.pdf_exists) && 'PDF'].filter(Boolean).join(' / ')}
             </span>
           </>
         ) : (
@@ -166,7 +237,7 @@ function ReportCard({
 // ============================================================
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<number | string | null>(null)
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [filter, setFilter] = useState<FilterType>('all')
   const [loading, setLoading] = useState(true)
@@ -192,9 +263,21 @@ export default function ReportsPage() {
   useEffect(() => {
     if (!selectedId) { setSelectedReport(null); return }
     setContentLoading(true)
+    // Find the existing list entry for PDF metadata
+    const listEntry = reports.find((r) => r.id === selectedId)
     fetch(`/api/reports?id=${selectedId}`)
       .then((r) => r.json())
-      .then((data) => { if (data && !data.error) setSelectedReport(data) })
+      .then((data) => {
+        if (data && !data.error) {
+          // Merge PDF info from list entry (already computed server-side)
+          setSelectedReport({
+            ...data,
+            pdf_exists: listEntry?.pdf_exists ?? data.pdf_exists,
+            pdf_url: listEntry?.pdf_url ?? data.pdf_url,
+            pdf_size: listEntry?.pdf_size ?? data.pdf_size,
+          })
+        }
+      })
       .catch(() => {})
       .finally(() => setContentLoading(false))
   }, [selectedId])
@@ -288,7 +371,13 @@ export default function ReportsPage() {
               <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(selectedReport.date).toLocaleDateString('zh-TW')}</span>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
+            {selectedReport.pdf_exists && (
+              <PdfDownloadButton
+                reportId={selectedReport.id}
+                pdfSize={selectedReport.pdf_size}
+              />
+            )}
             <ExportDownloadButton label="Export PDF" icon={FileDown} format="pdf" reportId={selectedReport.id} />
             <ExportDownloadButton label="Export Markdown" icon={FileText} format="markdown" reportId={selectedReport.id} />
           </div>
