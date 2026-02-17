@@ -47,7 +47,7 @@ interface Report {
 // Fetch reports from Supabase only
 async function fetchSupabaseReports(): Promise<Report[]> {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?select=id,title,author,type,md_content,date,tasks_extracted,category&order=id.desc`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?select=id,title,author,type,md_content,date,tasks_extracted&order=id.desc`, {
       headers: {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -76,7 +76,7 @@ async function fetchSupabaseReports(): Promise<Report[]> {
         export_status: null,
         md_content: report.md_content,
         content: report.md_content,
-        category: report.category || null,
+        
       }
     })
   } catch (error) {
@@ -89,16 +89,6 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-
-    // Debug: check env vars
-    if (searchParams.get('debug') === '1') {
-      return NextResponse.json({
-        SUPABASE_URL: SUPABASE_URL?.substring(0, 30) + '...',
-        KEY_PREFIX: SUPABASE_KEY?.substring(0, 20) + '...',
-        HAS_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        HAS_NEXT_PUBLIC_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      })
-    }
 
     // Get reports from Supabase only
     const reports = await fetchSupabaseReports()
