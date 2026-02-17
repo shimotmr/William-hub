@@ -37,30 +37,55 @@ type DashboardData = {
   recentCompleted: RecentTask[]
 }
 
-const agentColors: Record<string, string> = {
-  'Travis': '#ef4444',
-  'Coder': '#3b82f6',
-  'Designer': '#a855f7',
-  'Inspector': '#f59e0b',
-  'Researcher': '#10b981',
-  'Writer': '#06b6d4',
-  'Analyst': '#6366f1',
-  'Secretary': '#ec4899',
+// Dynamic color generation for agents
+const generateAgentColor = (name: string): string => {
+  const colors = [
+    '#ef4444', // red
+    '#3b82f6', // blue 
+    '#a855f7', // purple
+    '#f59e0b', // amber
+    '#10b981', // emerald
+    '#06b6d4', // cyan
+    '#6366f1', // indigo
+    '#ec4899', // pink
+    '#8b5cf6', // violet
+    '#84cc16', // lime
+  ]
+  // Generate consistent color based on name hash
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) & 0xffffffff
+  }
+  return colors[Math.abs(hash) % colors.length]
 }
 
-const agentIcons: Record<string, React.ReactNode> = {
-  'Travis': <Target size={18} />,
-  'Coder': <Code size={18} />,
-  'Designer': <Palette size={18} />,
-  'Inspector': <Search size={18} />,
-  'Researcher': <BookOpen size={18} />,
-  'Writer': <PenTool size={18} />,
-  'Analyst': <BarChart3 size={18} />,
-  'Secretary': <Mail size={18} />,
+// Dynamic icon mapping
+const getAgentIcon = (name: string): React.ReactNode => {
+  const iconMap: Record<string, React.ReactNode> = {
+    'Travis': <Target size={18} />,
+    'main': <Target size={18} />,
+    'Coder': <Code size={18} />,
+    'coder': <Code size={18} />,
+    'coder-b': <Code size={18} />,
+    'Designer': <Palette size={18} />,
+    'designer': <Palette size={18} />,
+    'Inspector': <Search size={18} />,
+    'inspector': <Search size={18} />,
+    'Researcher': <BookOpen size={18} />,
+    'researcher': <BookOpen size={18} />,
+    'Writer': <PenTool size={18} />,
+    'writer': <PenTool size={18} />,
+    'Analyst': <BarChart3 size={18} />,
+    'analyst': <BarChart3 size={18} />,
+    'Secretary': <Mail size={18} />,
+    'secretary': <Mail size={18} />,
+    'trader': <BarChart3 size={18} />,
+  }
+  return iconMap[name] || <Bot size={18} />
 }
 
 function getAgentColor(name: string): string {
-  return agentColors[name] || '#6b7280'
+  return generateAgentColor(name)
 }
 
 function timeAgo(dateStr: string): string {
@@ -206,7 +231,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {data.agents.map(agent => {
                   const color = getAgentColor(agent.name)
-                  const icon = agentIcons[agent.name] || <Bot size={18} />
+                  const icon = getAgentIcon(agent.name)
                   return (
                     <div
                       key={agent.name}
@@ -230,11 +255,10 @@ export default function DashboardPage() {
                         {/* Status light */}
                         <div className="relative">
                           <div
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ background: agent.isActive ? '#4ade80' : '#4b5563' }}
+                            className={`w-2.5 h-2.5 rounded-full ${agent.isActive ? 'bg-emerald-400' : 'bg-slate-600'}`}
                           />
                           {agent.isActive && (
-                            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-400 animate-ping opacity-40" />
+                            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping opacity-40" />
                           )}
                         </div>
                       </div>

@@ -1,13 +1,13 @@
 'use client'
 
 import {
-  MessageCircle, ArrowLeft, Send, Users, Clock, Hash,
-  Loader2, RefreshCw, User, Bot, ChevronDown, Plus, Link
+  MessageCircle, ArrowLeft, Send, Users, Clock,
+  Loader2, RefreshCw, Plus, Link
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 
-import { supabase, type Message as SupabaseMessage, type Thread as SupabaseThread } from '@/lib/supabase'
+import { supabase, type Message as SupabaseMessage } from '@/lib/supabase'
 
 interface Thread {
   id: string
@@ -32,13 +32,41 @@ interface Message {
   metadata?: any
 }
 
-const agentConfig: Record<string, { color: string; avatar?: string }> = {
-  designer: { color: '#8b5cf6', avatar: 'designer.png' },
-  architect: { color: '#3b82f6', avatar: 'architect.png' },
-  coder: { color: '#10b981', avatar: 'coder.png' },
-  ux: { color: '#f59e0b', avatar: 'ux.png' },
-  performance: { color: '#ef4444', avatar: 'performance.png' },
-  main: { color: '#6366f1', avatar: 'main.png' }
+// Dynamic agent configuration generation
+const generateAgentConfig = (sender: string) => {
+  const colors = [
+    '#ef4444', '#3b82f6', '#a855f7', '#f59e0b', '#10b981', 
+    '#06b6d4', '#6366f1', '#ec4899', '#8b5cf6', '#84cc16'
+  ]
+  
+  // Known avatar mappings
+  const avatarMap: Record<string, string> = {
+    designer: 'designer.png',
+    architect: 'architect.png', 
+    coder: 'coder.png',
+    'coder-b': 'coder.png',
+    ux: 'ux.png',
+    performance: 'performance.png',
+    main: 'main.png',
+    travis: 'main.png',
+    inspector: 'inspector.png',
+    secretary: 'secretary.png',
+    writer: 'writer.png', 
+    researcher: 'researcher.png',
+    analyst: 'analyst.png',
+    trader: 'trader.png',
+  }
+  
+  // Generate consistent color based on sender name
+  let hash = 0
+  for (let i = 0; i < sender.length; i++) {
+    hash = ((hash << 5) - hash + sender.charCodeAt(i)) & 0xffffffff
+  }
+  
+  return {
+    color: colors[Math.abs(hash) % colors.length],
+    avatar: avatarMap[sender.toLowerCase()]
+  }
 }
 
 function timeAgo(dateStr: string): string {
@@ -59,7 +87,7 @@ function formatTime(dateStr: string): string {
 }
 
 function AgentAvatar({ sender, size = 8 }: { sender: string; size?: number }) {
-  const config = agentConfig[sender] || { color: '#6b7280' }
+  const config = generateAgentConfig(sender)
   const avatarSize = `w-${size} h-${size}`
   
   return (
@@ -116,7 +144,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!selectedThread) return
     
-    let realtimeChannel: any = null
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
     let pollInterval: NodeJS.Timeout | null = null
     let isRealtimeConnected = false
     
@@ -141,7 +169,7 @@ export default function ChatPage() {
     
     // 設定 Supabase Realtime 訂閱
     const setupRealtime = () => {
-      console.log('Setting up Realtime for thread:', selectedThread.id)
+      console.warn('Setting up Realtime for thread:', selectedThread.id)
       
       realtimeChannel = supabase
         .channel(`agent_messages_${selectedThread.id}`)
@@ -154,22 +182,22 @@ export default function ChatPage() {
             filter: `thread_id=eq.${selectedThread.id}`
           },
           (payload) => {
-            console.log('🔥 New message received via Realtime:', payload)
+            console.warn('🔥 New message received via Realtime:', payload)
             const newMessage = payload.new as SupabaseMessage
             setMessages(prev => [...prev, newMessage])
           }
         )
         .subscribe((status, err) => {
-          console.log('🔄 Realtime subscription status:', status, err)
+          console.warn('🔄 Realtime subscription status:', status, err)
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Successfully subscribed to agent_messages realtime')
+            console.warn('✅ Successfully subscribed to agent_messages realtime')
             setRealtimeConnected(true)
             isRealtimeConnected = true
             // 停止 fallback 輪詢
             if (pollInterval) {
               clearInterval(pollInterval)
               pollInterval = null
-              console.log('🚫 Stopped fallback polling - Realtime is active')
+              console.warn('🚫 Stopped fallback polling - Realtime is active')
             }
           } else if (status === 'CHANNEL_ERROR') {
             console.error('❌ Failed to subscribe to realtime:', err)
@@ -180,7 +208,7 @@ export default function ChatPage() {
             isRealtimeConnected = false
             setRealtimeConnected(false)
           } else if (status === 'CLOSED') {
-            console.log('🔒 Realtime connection closed')
+            console.warn('🔒 Realtime connection closed')
             isRealtimeConnected = false
             setRealtimeConnected(false)
           }
@@ -192,15 +220,15 @@ export default function ChatPage() {
     
     // 設定 fallback 輪詢（延遲啟動，給 Realtime 時間連接）
     const fallbackTimeout = setTimeout(() => {
-      console.log('🕐 Checking Realtime connection status:', isRealtimeConnected)
+      console.warn('🕐 Checking Realtime connection status:', isRealtimeConnected)
       if (!isRealtimeConnected) {
-        console.log('⚠️  Realtime not connected, starting fallback polling every 30s')
+        console.warn('⚠️  Realtime not connected, starting fallback polling every 30s')
         pollInterval = setInterval(() => {
-          console.log('🔄 Fallback polling for messages')
+          console.warn('🔄 Fallback polling for messages')
           loadMessages()
         }, 30000) // 30 秒輪詢作為 fallback
       } else {
-        console.log('🎯 Realtime connected, no fallback needed')
+        console.warn('🎯 Realtime connected, no fallback needed')
       }
     }, 3000) // 3 秒後檢查 Realtime 是否連接成功
     
@@ -527,7 +555,7 @@ export default function ChatPage() {
                   ) : messages.length > 0 ? (
                     <div className="space-y-6">
                       {messages.map((message, index) => {
-                        const config = agentConfig[message.sender] || { color: '#6b7280' }
+                        const config = generateAgentConfig(message.sender)
                         const showAvatar = index === 0 || messages[index - 1].sender !== message.sender
                         
                         return (
@@ -579,11 +607,7 @@ export default function ChatPage() {
                         placeholder="輸入訊息..."
                         rows={1}
                         disabled={sending}
-                        className="w-full px-3 py-2 border border-border rounded-lg resize-none bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
-                        style={{
-                          minHeight: '40px',
-                          maxHeight: '120px'
-                        }}
+                        className="w-full px-3 py-2 border border-border rounded-lg resize-none bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 min-h-10 max-h-32"
                       />
                     </div>
                     <button
