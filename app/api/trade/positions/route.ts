@@ -1,52 +1,72 @@
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+
+const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
 
 // GET /api/trade/positions - Get user positions
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'UNAUTHORIZED', message: '用戶未認證' },
-        { status: 401 }
-      )
+    // For MVP, we'll use a mock user ID
+    // In production, implement proper JWT token validation
+    const mockUserId = 'mock-user-id-123'
+
+    // Check user credentials exist (mock for MVP)
+    const mockCredentials = {
+      is_active: true
     }
 
-    // Check user credentials exist
-    const { data: credentials } = await supabase
-      .from('user_shioaji_credentials')
-      .select('is_active')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!credentials?.is_active) {
+    if (!mockCredentials.is_active) {
       return NextResponse.json(
         { success: false, error: 'CREDENTIALS_REQUIRED', message: '請先設定 Shioaji 憑證' },
         { status: 400 }
       )
     }
 
-    // TODO: In real implementation, query actual positions from Shioaji API
-    // For now, calculate positions from filled orders
-    const { data: filledOrders, error: ordersError } = await supabase
-      .from('trade_orders')
-      .select('symbol, action, filled_quantity, filled_price, filled_at')
-      .eq('user_id', user.id)
-      .eq('status', 'filled')
-      .not('filled_quantity', 'is', null)
-      .order('filled_at', { ascending: true })
-
-    if (ordersError) {
-      console.error('Database error:', ordersError)
-      return NextResponse.json(
-        { success: false, error: 'DATABASE_ERROR', message: '查詢持倉失敗' },
-        { status: 500 }
-      )
+    // Try to fetch real positions from Shioaji API first
+    let realPositions = null
+    try {
+      // TODO: Implement real Shioaji API call here
+      // const { ShioajiClient } = await import('@/lib/shioaji-client')
+      // const shioajiClient = new ShioajiClient()
+      // realPositions = await shioajiClient.getPositions(credentials)
+      
+      // For now, use calculation from orders but keep the structure
+      console.log('Using calculated positions - Shioaji integration pending')
+    } catch (error) {
+      console.warn('Shioaji API call failed, falling back to calculation:', error)
     }
+
+    // Mock filled orders data for MVP (calculate positions from these)
+    const filledOrders = [
+      {
+        symbol: '2330',
+        action: 'buy',
+        filled_quantity: 5,
+        filled_price: 968.20,
+        filled_at: '2026-02-15T09:30:00Z'
+      },
+      {
+        symbol: '2317',
+        action: 'buy',
+        filled_quantity: 10,
+        filled_price: 178.00,
+        filled_at: '2026-02-16T10:15:00Z'
+      },
+      {
+        symbol: '2454',
+        action: 'buy',
+        filled_quantity: 2,
+        filled_price: 1285.00,
+        filled_at: '2026-02-17T11:00:00Z'
+      },
+      {
+        symbol: '2317',
+        action: 'sell',
+        filled_quantity: 3,
+        filled_price: 179.50,
+        filled_at: '2026-02-17T14:30:00Z'
+      }
+    ]
 
     // Calculate net positions
     const positionMap: { [symbol: string]: {

@@ -2,7 +2,7 @@
 
 import { TrendingUp, Users, Clock, AlertTriangle } from 'lucide-react'
 
-import { AccountOverview } from '@/components/trading/AccountOverview'
+import { AccountOverviewWithAPI } from '@/components/trading/AccountOverviewWithAPI'
 import { PercentageBadge } from '@/components/trading/PercentageBadge'
 import { StockPrice } from '@/components/trading/StockPrice'
 
@@ -10,17 +10,6 @@ import { StockPrice } from '@/components/trading/StockPrice'
  * 交易主頁 - 帳戶總覽
  */
 export default function TradePage() {
-  // Mock 帳戶資料
-  const accountData = {
-    totalValue: 3245680,      // 總市值
-    totalCost: 3124500,       // 總成本
-    unrealizedPnl: 121180,    // 未實現損益
-    unrealizedPnlPct: 3.88,   // 未實現損益百分比
-    realizedPnl: 45230,       // 已實現損益
-    availableCash: 185400,    // 可用資金
-    margin: 0,                // 融資金額
-    marginMaintenance: 0      // 維持保證金
-  }
 
   // Mock 市場指數資料
   const marketIndices = [
@@ -54,7 +43,7 @@ export default function TradePage() {
       </div>
 
       {/* 帳戶總覽 */}
-      <AccountOverview data={accountData} />
+      <AccountOverviewWithAPI />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
