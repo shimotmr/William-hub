@@ -244,6 +244,7 @@ export default function ReportsPage() {
   const [contentLoading, setContentLoading] = useState(false)
   const [mobileShowContent, setMobileShowContent] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // 預設降序（新的在上）
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch list
   useEffect(() => {
@@ -283,10 +284,20 @@ export default function ReportsPage() {
   }, [selectedId])
 
   const filtered = (filter === 'all' ? reports : reports.filter((r) => r.type === filter))
+    .filter((r) => {
+      if (!searchQuery) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        r.title?.toLowerCase().includes(q) ||
+        r.author?.toLowerCase().includes(q) ||
+        String(r.id).includes(q)
+      )
+    })
     .sort((a, b) => {
       const dateA = new Date(a.date).getTime()
       const dateB = new Date(b.date).getTime()
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+      if (dateA !== dateB) return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+      return sortOrder === 'desc' ? Number(b.id) - Number(a.id) : Number(a.id) - Number(b.id)
     })
 
   const filters: { label: string; value: FilterType }[] = [
@@ -299,8 +310,18 @@ export default function ReportsPage() {
   // --- Sidebar ---
   const sidebar = (
     <div className="flex flex-col h-full">
+      {/* Search bar */}
+      <div className="px-4 pt-4 pb-2">
+        <input
+          type="text"
+          placeholder="搜尋報告標題、作者、ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-sm bg-muted border border-border text-foreground placeholder:text-foreground-subtle focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
+        />
+      </div>
       {/* Filter chips */}
-      <div className="flex justify-between items-center gap-3 p-4 pb-2">
+      <div className="flex justify-between items-center gap-3 px-4 pb-2">
         <div className="flex gap-2 flex-wrap">
           {filters.map((f) => (
             <button
