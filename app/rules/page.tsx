@@ -166,7 +166,7 @@ function RuleCard({ rule }: { rule: RuleItem }) {
         <div className="flex items-center gap-2">
           <span className="text-lg">{levelConf.icon}</span>
           <div>
-            <h3 className="text-sm font-semibold text-gray-200">{rule.name}</h3>
+            <h3 className="text-sm font-semibold text-gray-800">{rule.name}</h3>
             <p className="text-xs text-gray-400">{levelConf.label}</p>
           </div>
         </div>
