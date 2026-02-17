@@ -12,8 +12,11 @@ const pixelmatch = require('pixelmatch');
 
 // 設定
 const PROJECT = process.env.PROJECT || 'travis-daily';
-const BASE_DIR = process.env.HOME + '/clawd';
-const SCREENSHOTS_DIR = path.join(BASE_DIR, 'logs', 'visual-diff', PROJECT);
+
+// 如果在 CI 環境中，使用相對路徑，否則使用 clawd 目錄
+const IS_CI = process.env.CI || process.env.GITHUB_ACTIONS;
+const BASE_DIR = IS_CI ? '.visual-regression' : path.join(process.env.HOME, 'clawd', 'logs', 'visual-diff', PROJECT);
+const SCREENSHOTS_DIR = IS_CI ? BASE_DIR : BASE_DIR;
 const BASELINE_DIR = path.join(SCREENSHOTS_DIR, 'baseline');
 const CURRENT_DIR = path.join(SCREENSHOTS_DIR, 'current');
 const DIFF_DIR = path.join(SCREENSHOTS_DIR, 'diff');
@@ -29,7 +32,7 @@ const CONFIG = {
     ],
   },
   'william-hub': {
-    port: 3001,
+    port: 3000,
     pages: [
       { name: 'home', url: '/' },
       { name: 'board', url: '/board' },
