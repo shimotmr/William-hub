@@ -10,16 +10,21 @@ const ThemeToggle = dynamic(() => import('./components/ThemeToggle').then(mod =>
   ssr: false,
 })
 
-const agentsList = [
-  { name: 'Travis', status: 'ok' as const },
-  { name: 'Inspector', status: 'ok' as const },
-  { name: 'Secretary', status: 'ok' as const },
-  { name: 'Writer', status: 'ok' as const },
-  { name: 'Researcher', status: 'ok' as const },
-  { name: 'Coder', status: 'ok' as const },
-  { name: 'Designer', status: 'ok' as const },
-  { name: 'Analyst', status: 'idle' as const },
-]
+// Default agent names to display (even if they have no active tasks)
+const DEFAULT_AGENTS = ['Travis', 'Inspector', 'Secretary', 'Writer', 'Researcher', 'Coder', 'Designer', 'Analyst']
+
+interface Agent {
+  name: string
+  status: 'ok' | 'fail' | 'idle'
+  activeTasks?: number
+  currentTask?: string | null
+}
+
+interface AgentStatus {
+  agent_name: string
+  active_tasks: number
+  current_task: string | null
+}
 
 const tasks = [
   { id: 1, agent: 'Coder', task: 'William Hub Reports 資料過濾修復', status: 'done' as const },
@@ -283,7 +288,9 @@ function ArrowRight() {
 // Page Component
 // ============================================================
 export default function Home() {
-  const agents = agentsList
+  const [agents, setAgents] = useState<Agent[]>(
+    DEFAULT_AGENTS.map(name => ({ name, status: 'idle' as const }))
+  )
   const [tokens, setTokens] = useState({ today: 0, week: 0, month: 0, total: 0 })
 
   useEffect(() => {
@@ -291,6 +298,37 @@ export default function Home() {
       .then(r => r.json())
       .then(d => { if (d && !d.error) setTokens(d) })
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/agents/status')
+      .then(r => r.json())
+      .then((statuses: AgentStatus[]) => {
+        if (Array.isArray(statuses)) {
+          const agentMap = new Map<string, Agent>()
+          
+          // Initialize with default agents
+          DEFAULT_AGENTS.forEach(name => {
+            agentMap.set(name, { name, status: 'idle' })
+          })
+          
+          // Update with real data from API
+          statuses.forEach(status => {
+            const name = status.agent_name
+            agentMap.set(name, {
+              name,
+              status: status.active_tasks > 0 ? 'ok' : 'idle',
+              activeTasks: status.active_tasks,
+              currentTask: status.current_task
+            })
+          })
+          
+          setAgents(Array.from(agentMap.values()))
+        }
+      })
+      .catch(() => {
+        // Keep default state on error
+      })
   }, [])
 
   return (
