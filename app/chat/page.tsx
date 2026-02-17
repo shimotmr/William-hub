@@ -7,6 +7,8 @@ import {
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 
+import { supabase, type Message as SupabaseMessage, type Thread as SupabaseThread } from '@/lib/supabase'
+
 interface Thread {
   id: string
   title: string
@@ -93,6 +95,7 @@ export default function ChatPage() {
   const [newThreadTitle, setNewThreadTitle] = useState('')
   const [newThreadDescription, setNewThreadDescription] = useState('')
   const [newThreadTaskId, setNewThreadTaskId] = useState('')
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 加載討論串列表
@@ -113,6 +116,10 @@ export default function ChatPage() {
   useEffect(() => {
     if (!selectedThread) return
     
+    let realtimeChannel: any = null
+    let pollInterval: NodeJS.Timeout | null = null
+    let isRealtimeConnected = false
+    
     const loadMessages = () => {
       if (messagesLoading) return // 避免重複請求
       
@@ -132,11 +139,84 @@ export default function ChatPage() {
     // 初次載入
     loadMessages()
     
-    // 設定輪詢 - 每 10 秒刷新一次
-    const interval = setInterval(loadMessages, 10000)
+    // 設定 Supabase Realtime 訂閱
+    const setupRealtime = () => {
+      console.log('Setting up Realtime for thread:', selectedThread.id)
+      
+      realtimeChannel = supabase
+        .channel(`agent_messages_${selectedThread.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'agent_messages',
+            filter: `thread_id=eq.${selectedThread.id}`
+          },
+          (payload) => {
+            console.log('🔥 New message received via Realtime:', payload)
+            const newMessage = payload.new as SupabaseMessage
+            setMessages(prev => [...prev, newMessage])
+          }
+        )
+        .subscribe((status, err) => {
+          console.log('🔄 Realtime subscription status:', status, err)
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Successfully subscribed to agent_messages realtime')
+            setRealtimeConnected(true)
+            isRealtimeConnected = true
+            // 停止 fallback 輪詢
+            if (pollInterval) {
+              clearInterval(pollInterval)
+              pollInterval = null
+              console.log('🚫 Stopped fallback polling - Realtime is active')
+            }
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Failed to subscribe to realtime:', err)
+            isRealtimeConnected = false
+            setRealtimeConnected(false)
+          } else if (status === 'TIMED_OUT') {
+            console.error('⏰ Realtime connection timed out')
+            isRealtimeConnected = false
+            setRealtimeConnected(false)
+          } else if (status === 'CLOSED') {
+            console.log('🔒 Realtime connection closed')
+            isRealtimeConnected = false
+            setRealtimeConnected(false)
+          }
+        })
+    }
+
+    // 設定 Realtime
+    setupRealtime()
     
-    return () => clearInterval(interval)
-  }, [selectedThread])
+    // 設定 fallback 輪詢（延遲啟動，給 Realtime 時間連接）
+    const fallbackTimeout = setTimeout(() => {
+      console.log('🕐 Checking Realtime connection status:', isRealtimeConnected)
+      if (!isRealtimeConnected) {
+        console.log('⚠️  Realtime not connected, starting fallback polling every 30s')
+        pollInterval = setInterval(() => {
+          console.log('🔄 Fallback polling for messages')
+          loadMessages()
+        }, 30000) // 30 秒輪詢作為 fallback
+      } else {
+        console.log('🎯 Realtime connected, no fallback needed')
+      }
+    }, 3000) // 3 秒後檢查 Realtime 是否連接成功
+    
+    return () => {
+      // 清理
+      if (realtimeChannel) {
+        supabase.removeChannel(realtimeChannel)
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
+      if (fallbackTimeout) {
+        clearTimeout(fallbackTimeout)
+      }
+    }
+  }, [selectedThread, messagesLoading])
 
   // 自動捲動到最新訊息
   useEffect(() => {
@@ -264,8 +344,20 @@ export default function ChatPage() {
                 </div>
               </div>
             </div>
-            <div className="text-xs text-foreground-subtle bg-card px-2 py-1 rounded border">
-              MVP 互動版本
+            <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded border ${
+                realtimeConnected 
+                  ? 'text-green-600 bg-green-50 border-green-200' 
+                  : 'text-yellow-600 bg-yellow-50 border-yellow-200'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  realtimeConnected ? 'bg-green-500' : 'bg-yellow-500'
+                }`} />
+                <span>{realtimeConnected ? '即時' : '輪詢'}</span>
+              </div>
+              <div className="text-xs text-foreground-subtle bg-card px-2 py-1 rounded border">
+                Realtime 整合版本
+              </div>
             </div>
           </div>
         </header>
