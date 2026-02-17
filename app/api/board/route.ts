@@ -24,6 +24,10 @@ export async function GET(request: Request) {
         // 長期：遠期願景
         filter = 'status=eq.長期目標&order=created_at.asc'
         break
+      case 'recurring':
+        // 週期性：所有有週期設定的任務
+        filter = 'recurrence_type=not.eq.none&recurrence_type=not.is.null&order=next_run_at.asc'
+        break
       case 'done':
         // 已完成：歷史記錄
         filter = 'status=in.(已完成,已關閉)&order=completed_at.desc'
