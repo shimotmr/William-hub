@@ -193,7 +193,7 @@ function ReportCard({
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <span className="text-[15px] font-semibold text-foreground truncate flex-1">
-          {report.title}
+          <span className="text-foreground-subtle font-mono text-xs mr-1">#{report.id}</span>{report.title}
         </span>
         <span
           className="text-[10px] px-1.5 py-0.5 rounded-full uppercase font-medium shrink-0"
@@ -294,9 +294,6 @@ export default function ReportsPage() {
       )
     })
     .sort((a, b) => {
-      const dateA = new Date(a.date).getTime()
-      const dateB = new Date(b.date).getTime()
-      if (dateA !== dateB) return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
       return sortOrder === 'desc' ? Number(b.id) - Number(a.id) : Number(a.id) - Number(b.id)
     })
 
