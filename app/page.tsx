@@ -463,6 +463,7 @@ export default function Home() {
                     <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                     <div className="flex-1 min-w-0">
                       <span className={`${t.status === 'done' ? 'line-through text-foreground-muted' : 'text-foreground'}`}>
+                        <span className="text-foreground-subtle font-mono text-xs mr-1.5">#{t.id}</span>
                         {t.task}
                       </span>
                     </div>
