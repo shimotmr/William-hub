@@ -1,11 +1,11 @@
-import { cookies } from 'next/headers'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-server'
 
 // POST /api/trade/orders - Place new order
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Calculate estimated amounts
     const orderPrice = order_type === 'market' ? null : price
     const estimatedAmount = orderPrice ? orderPrice * quantity * 1000 : null
-    const commission = estimatedAmount ? Math.round(estimatedAmount * 0.001425 * 0.28) : null
+    const commission = estimatedAmount ? Math.round(estimatedAmount * 0.001425 * 0.28) : 0
     const tax = action === 'sell' && estimatedAmount ? Math.round(estimatedAmount * 0.003) : 0
     const totalAmount = estimatedAmount ? estimatedAmount + commission + tax : null
 
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 // GET /api/trade/orders - Get user orders
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

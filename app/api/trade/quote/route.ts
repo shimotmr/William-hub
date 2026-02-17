@@ -5,9 +5,8 @@ import { ShioajiClient } from '@/lib/shioaji-client'
 import { CredentialEncryption } from '@/lib/encryption'
 import { spawn } from 'child_process'
 import path from 'path'
-import fs from 'fs'
 
-// GET /api/trade/quotes?symbols=2330,2317,2454 - Get batch stock quotes
+// GET /api/trade/quote?symbol=2330 - Get single stock quote
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -22,22 +21,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const symbolsParam = searchParams.get('symbols')
+    const symbol = searchParams.get('symbol')
 
-    if (!symbolsParam) {
+    if (!symbol) {
       return NextResponse.json(
-        { success: false, error: 'MISSING_SYMBOLS', message: '請提供股票代號' },
+        { success: false, error: 'MISSING_SYMBOL', message: '請提供股票代號' },
         { status: 400 }
       )
     }
 
-    const symbols = symbolsParam.split(',')
-      .map(s => s.trim())
-      .filter(s => /^[0-9]{4,6}$/.test(s))
-
-    if (symbols.length === 0) {
+    // Validate symbol format
+    if (!/^[0-9]{4,6}$/.test(symbol)) {
       return NextResponse.json(
-        { success: false, error: 'INVALID_SYMBOLS', message: '無有效的股票代號' },
+        { success: false, error: 'INVALID_SYMBOL', message: '股票代號格式不正確' },
         { status: 400 }
       )
     }
@@ -50,8 +46,7 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
-    let quotes: Record<string, unknown>[] = []
-    let useMock = true
+    let quoteData = null
 
     if (credentials) {
       try {
@@ -59,24 +54,23 @@ export async function GET(request: NextRequest) {
         const result = await shioajiClient.getConnectionStatus(credentials)
         
         if (result.connected) {
-          // Get quotes from Shioaji
-          quotes = await getQuotesFromShioaji(symbols, credentials)
-          useMock = false
+          // Get quote from Shioaji
+          quoteData = await getQuoteFromShioaji(symbol, credentials)
         }
-      } catch (e: any) {
-        console.error('Shioaji quotes error:', e)
+      } catch (e) {
+        console.error('Shioaji quote error:', e)
       }
     }
 
-    // If no quotes from Shioaji, use mock data for demo
-    if (useMock || quotes.length === 0) {
-      quotes = symbols.map(symbol => getMockQuote(symbol))
+    // If no quote from Shioaji, use mock data for demo
+    if (!quoteData) {
+      quoteData = getMockQuote(symbol)
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        quotes
+        quote: quoteData
       }
     })
 
@@ -90,15 +84,16 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Get batch quotes from Shioaji API
+ * Get quote from Shioaji API
  */
-async function getQuotesFromShioaji(symbols: string[], credentials: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+async function getQuoteFromShioaji(symbol: string, credentials: Record<string, unknown>): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const pythonPath = path.join(process.env.HOME || '', 'clawd', 'trading_env', 'bin', 'python')
     const cliPath = path.join(process.env.HOME || '', 'clawd', 'shioaji_cli.py')
     
     // Create temp credentials file
-    const tempCredPath = path.join(process.env.HOME || '', '.openclaw', 'temp', `shioaji_quotes_${Date.now()}.json`)
+    const tempCredPath = path.join(process.env.HOME || '', '.openclaw', 'temp', `shioaji_quote_${Date.now()}.json`)
+    const fs = require('fs')
     
     const credData = {
       api_key: new CredentialEncryption().decryptCredential(JSON.parse(credentials.api_key_encrypted)),
@@ -110,9 +105,9 @@ async function getQuotesFromShioaji(symbols: string[], credentials: Record<strin
     
     const childProcess = spawn(pythonPath, [
       cliPath,
-      'get_quotes',
+      'get_quote',
       '--credentials', tempCredPath,
-      '--symbols', symbols.join(',')
+      '--symbol', symbol
     ], {
       env: { ...process.env },
       stdio: ['pipe', 'pipe', 'pipe']
@@ -136,10 +131,12 @@ async function getQuotesFromShioaji(symbols: string[], credentials: Record<strin
       if (code === 0 && stdout.trim()) {
         try {
           const result = JSON.parse(stdout.trim())
-          if (result.success && result.data && result.data.quotes) {
-            const quotes = result.data.quotes.map((q: any) => ({
+          if (result.success && result.data) {
+            // Transform to required format
+            const q = result.data
+            resolve({
               symbol: q.symbol,
-              symbol_name: q.name || q.symbol,
+              symbol_name: q.name || symbol,
               last_price: parseFloat(q.price?.toFixed(2)) || 0,
               change: parseFloat(q.change?.toFixed(2)) || 0,
               change_percent: parseFloat(((q.change / (q.price - q.change)) * 100)?.toFixed(2)) || 0,
@@ -147,16 +144,15 @@ async function getQuotesFromShioaji(symbols: string[], credentials: Record<strin
               bid_price: parseFloat(q.bid_price?.toFixed(2)) || 0,
               ask_price: parseFloat(q.ask_price?.toFixed(2)) || 0,
               updated_at: q.updated_at || new Date().toISOString()
-            }))
-            resolve(quotes)
+            })
           } else {
-            reject(new Error(result.error || 'Failed to get quotes'))
+            reject(new Error(result.error || 'Failed to get quote'))
           }
         } catch (e) {
           reject(e)
         }
       } else {
-        reject(new Error(stderr || 'Failed to execute quotes command'))
+        reject(new Error(stderr || 'Failed to execute quote command'))
       }
     })
 
