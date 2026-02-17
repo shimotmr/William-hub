@@ -109,15 +109,6 @@ export default function SystemMonitor() {
 
   const cards = [
     {
-      icon: <Cpu size={18} />,
-      label: 'Token 使用率',
-      value: `${data.tokenUsage.percentage}%`,
-      subValue: `${formatNumber(data.tokenUsage.current)} / ${formatNumber(data.tokenUsage.limit)}`,
-      color: data.tokenUsage.percentage > 90 ? '#ef4444' : data.tokenUsage.percentage > 70 ? '#facc15' : '#60a5fa',
-      warning: data.tokenUsage.weeklyQuotaUsed ? '週限額已用完' : null,
-      progress: data.tokenUsage.percentage,
-    },
-    {
       icon: <Database size={18} />,
       label: 'Session 健康',
       value: data.sessions.active.toString(),
@@ -170,19 +161,19 @@ export default function SystemMonitor() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3">
         {cards.map((card, i) => (
           <div
             key={i}
-            className="group rounded-xl border p-5 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg"
+            className="group rounded-xl border p-3 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg"
             style={{
               borderColor: `${card.color}30`,
               background: `linear-gradient(135deg, ${card.color}08 0%, ${card.color}03 100%)`,
             }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${card.color}18`, color: card.color }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${card.color}18`, color: card.color }}>
                 {card.icon}
               </div>
               {card.warning && (
@@ -198,7 +189,7 @@ export default function SystemMonitor() {
             </div>
 
             {/* Value */}
-            <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: card.color }}>
+            <div className="text-xl font-bold mb-0.5" style={{ color: card.color }}>
               {card.value}
             </div>
 
