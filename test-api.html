@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shioaji API 測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .result {
+            background: #fff;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            border-left: 4px solid #007cba;
+        }
+        .error {
+            border-left-color: #dc3545;
+        }
+        .success {
+            border-left-color: #28a745;
+        }
+        input, textarea, button {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005f8a;
+        }
+    </style>
+</head>
+<body>
+    <h1>Shioaji Trade API 測試</h1>
+    
+    <div class="test-section">
+        <h2>1. 憑證設定 API</h2>
+        <div>
+            <label>API Key:</label>
+            <input type="text" id="apiKey" placeholder="輸入 Shioaji API Key">
+        </div>
+        <div>
+            <label>Secret Key:</label>
+            <input type="text" id="secretKey" placeholder="輸入 Shioaji Secret Key">
+        </div>
+        <div>
+            <label>
+                <input type="checkbox" id="simulationMode" checked>
+                模擬模式
+            </label>
+        </div>
+        <button onclick="testStoreCredentials()">設定憑證</button>
+        <div id="credentialsResult" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 憑證激活 API</h2>
+        <div>
+            <label>Credential ID (可選):</label>
+            <input type="text" id="credentialId" placeholder="留空則使用最新憑證">
+        </div>
+        <button onclick="testActivateCredentials()">激活憑證</button>
+        <div id="activateResult" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 連線狀態 API</h2>
+        <button onclick="testConnectionStatus()">查詢狀態</button>
+        <div id="statusResult" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 使用預設憑證測試</h2>
+        <button onclick="useDefaultCredentials()">載入預設憑證</button>
+        <div id="defaultResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        // 預設憑證 (來自 ~/.openclaw/credentials/shioaji.json)
+        const DEFAULT_CREDENTIALS = {
+            api_key: 'BAvzcf2kpPgwEn7UpYdc3vJ2KevDqBNHNnTEhcVA6vyJ',
+            secret_key: 'ANCF23D8yRY46Xc7DqzVgLd3isWnJqrXbogFxii8czLP'
+        };
+
+        function useDefaultCredentials() {
+            document.getElementById('apiKey').value = DEFAULT_CREDENTIALS.api_key;
+            document.getElementById('secretKey').value = DEFAULT_CREDENTIALS.secret_key;
+            showResult('defaultResult', '已載入預設憑證', 'success');
+        }
+
+        async function testStoreCredentials() {
+            const apiKey = document.getElementById('apiKey').value;
+            const secretKey = document.getElementById('secretKey').value;
+            const simulationMode = document.getElementById('simulationMode').checked;
+
+            if (!apiKey || !secretKey) {
+                showResult('credentialsResult', '請填入 API Key 和 Secret Key', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/trade/auth/credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        secret_key: secretKey,
+                        simulation_mode: simulationMode
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('credentialsResult', 
+                        `✅ 憑證設定成功！<br>Credential ID: ${result.credential_id}<br>模擬模式: ${simulationMode}`, 
+                        'success');
+                    
+                    // 自動填入 credential_id
+                    document.getElementById('credentialId').value = result.credential_id;
+                } else {
+                    showResult('credentialsResult', 
+                        `❌ 設定失敗: ${result.message || '未知錯誤'}`, 
+                        'error');
+                }
+            } catch (error) {
+                showResult('credentialsResult', 
+                    `❌ 網路錯誤: ${error.message}`, 
+                    'error');
+            }
+        }
+
+        async function testActivateCredentials() {
+            const credentialId = document.getElementById('credentialId').value;
+
+            try {
+                const body = credentialId ? { credential_id: credentialId } : {};
+                
+                const response = await fetch('/api/trade/auth/activate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showResult('activateResult', 
+                        `✅ 憑證激活成功！<br>連線狀態: ${result.connection_status}<br>可用帳戶: ${result.available_accounts?.length || 0} 個`, 
+                        'success');
+                } else {
+                    showResult('activateResult', 
+                        `❌ 激活失敗: ${result.message || '未知錯誤'}`, 
+                        'error');
+                }
+            } catch (error) {
+                showResult('activateResult', 
+                    `❌ 網路錯誤: ${error.message}`, 
+                    'error');
+            }
+        }
+
+        async function testConnectionStatus() {
+            try {
+                const response = await fetch('/api/trade/auth/status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    const data = result.data;
+                    showResult('statusResult', 
+                        `📊 連線狀態查詢成功！<br>
+                        連線狀態: ${data.is_connected ? '✅ 已連線' : '❌ 未連線'}<br>
+                        連線時間: ${data.connection_time || 'N/A'}<br>
+                        今日 API 呼叫次數: ${data.api_calls_today}<br>
+                        每日配額: ${data.daily_quota}<br>
+                        頻寬使用: ${data.bandwidth_used_mb} MB<br>
+                        帳戶數量: ${data.accounts?.length || 0} 個<br>
+                        模擬模式: ${data.simulation_mode ? '是' : '否'}`, 
+                        'success');
+                } else {
+                    showResult('statusResult', 
+                        `❌ 查詢失敗: ${result.message || '未知錯誤'}`, 
+                        'error');
+                }
+            } catch (error) {
+                showResult('statusResult', 
+                    `❌ 網路錯誤: ${error.message}`, 
+                    'error');
+            }
+        }
+
+        function showResult(elementId, message, type = 'result') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
