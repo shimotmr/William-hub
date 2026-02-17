@@ -26,15 +26,29 @@ interface AgentStatus {
   current_task: string | null
 }
 
-const tasks = [
-  { id: 1, agent: 'Coder', task: 'William Hub Reports 資料過濾修復', status: 'done' as const },
-  { id: 2, agent: 'Designer', task: 'Agent 辦公室展示頁 — 等距視角 + Galgame 對話', status: 'planned' as const },
-  { id: 3, agent: 'Coder', task: 'Portal 業績圖表 75% 標籤修正', status: 'in-progress' as const },
-  { id: 4, agent: 'Inspector', task: '知識庫清洗品質驗證（抽樣 20 篇）', status: 'planned' as const },
-  { id: 5, agent: 'Coder', task: 'Trade 頁面 Phase 2 — 接真實報價 API', status: 'planned' as const },
-  { id: 7, agent: 'Coder', task: 'EasyFlow 下次簽核實戰測試', status: 'planned' as const },
-  { id: 8, agent: 'Designer', task: 'William Hub + Portal 統一設計規範', status: 'planned' as const },
-]
+interface BoardTask {
+  id: number
+  board: 'agent' | 'william'
+  priority: string
+  title: string
+  description: string | null
+  result: string | null
+  assignee: string
+  status: string
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+  acceptance_criteria: string | null
+  recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly' | null
+  next_run_at: string | null
+}
+
+interface Task {
+  id: number
+  agent: string
+  task: string
+  status: 'done' | 'in-progress' | 'planned'
+}
 
 const taskStatusColors = {
   'done': { dot: 'bg-emerald-400', text: 'text-emerald-400', label: '完成' },
@@ -292,6 +306,68 @@ export default function Home() {
     DEFAULT_AGENTS.map(name => ({ name, status: 'idle' as const }))
   )
   const [tokens, setTokens] = useState({ today: 0, week: 0, month: 0, total: 0 })
+  const [tasks, setTasks] = useState<Task[]>([])
+
+  // Map database task statuses to homepage display statuses
+  const mapTaskStatus = (dbStatus: string): 'done' | 'in-progress' | 'planned' => {
+    switch (dbStatus) {
+      case '已完成':
+      case '已關閉':
+        return 'done'
+      case '執行中':
+        return 'in-progress'
+      case '待執行':
+      case '待規劃':
+      case '中期目標':
+      case '長期目標':
+      default:
+        return 'planned'
+    }
+  }
+
+  useEffect(() => {
+    // Fetch recent tasks from board_tasks - mix of active and recently completed
+    Promise.all([
+      fetch('/api/board?category=active').then(r => r.json()),
+      fetch('/api/board?category=done').then(r => r.json())
+    ])
+      .then(([activeTasks, doneTasks]) => {
+        const allTasks: BoardTask[] = []
+        
+        // Add active tasks
+        if (Array.isArray(activeTasks)) {
+          allTasks.push(...activeTasks)
+        }
+        
+        // Add recent completed tasks (last 3 days)
+        if (Array.isArray(doneTasks)) {
+          const threeDaysAgo = new Date()
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+          
+          const recentlyCompleted = doneTasks.filter(task => 
+            task.completed_at && new Date(task.completed_at) > threeDaysAgo
+          )
+          allTasks.push(...recentlyCompleted.slice(0, 3)) // Max 3 recent completed
+        }
+        
+        // Sort by updated_at desc and limit to 8 tasks total
+        const recentTasks = allTasks
+          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+          .slice(0, 8)
+          .map((boardTask): Task => ({
+            id: boardTask.id,
+            agent: boardTask.assignee || 'System',
+            task: boardTask.title,
+            status: mapTaskStatus(boardTask.status)
+          }))
+        
+        setTasks(recentTasks)
+      })
+      .catch(() => {
+        // Fallback to empty array on error
+        setTasks([])
+      })
+  }, [])
 
   useEffect(() => {
     fetch('/api/token-stats')
