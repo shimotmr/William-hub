@@ -345,6 +345,11 @@ export default function ReportsPage() {
         </button>
       </div>
 
+      {/* Report count */}
+      <div className="px-4 pb-2 text-xs text-foreground-muted">
+        共 {filtered.length} 份報告{filter !== 'all' || searchQuery ? `（已篩選）` : ''}
+      </div>
+
       {/* List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
         {loading ? (
