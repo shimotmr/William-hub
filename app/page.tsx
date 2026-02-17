@@ -414,7 +414,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="mt-14 text-center text-foreground-subtle text-xs tracking-wide">
-          William Hub v2
+          William Hub v2 - VRT Test
         </footer>
       </div>
     </main>
