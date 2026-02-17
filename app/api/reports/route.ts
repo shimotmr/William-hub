@@ -173,7 +173,7 @@ function scanReportsDirectory(): Report[] {
 // Fetch reports from Supabase
 async function fetchSupabaseReports(): Promise<Report[]> {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?select=id,title,author,type,md_content,date&order=date.desc`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/reports?select=id,title,author,type,md_content,date,tasks_extracted&order=id.desc`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
