@@ -294,26 +294,29 @@ function BoardColumn({
 }
 
 export default function BoardPage() {
-  const [tasks, setTasks] = useState<Task[]>([])
-  const [historyTasks, setHistoryTasks] = useState<Task[]>([])
+  const [activeTasks, setActiveTasks] = useState<Task[]>([])
+  const [plannedTasks, setPlannedTasks] = useState<Task[]>([])
+  const [backlogTasks, setBacklogTasks] = useState<Task[]>([])
+  const [doneTasks, setDoneTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'active' | 'history'>('active')
+  const [tab, setTab] = useState<'active' | 'planned' | 'backlog' | 'done'>('active')
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/board').then((r) => r.json()),
-      fetch('/api/board?history=true').then((r) => r.json()),
+      fetch('/api/board?category=active').then((r) => r.json()),
+      fetch('/api/board?category=planned').then((r) => r.json()),
+      fetch('/api/board?category=backlog').then((r) => r.json()),
+      fetch('/api/board?category=done').then((r) => r.json()),
     ])
-      .then(([active, history]) => {
-        if (Array.isArray(active)) setTasks(active)
-        if (Array.isArray(history)) setHistoryTasks(history)
+      .then(([active, planned, backlog, done]) => {
+        if (Array.isArray(active)) setActiveTasks(active)
+        if (Array.isArray(planned)) setPlannedTasks(planned)
+        if (Array.isArray(backlog)) setBacklogTasks(backlog)
+        if (Array.isArray(done)) setDoneTasks(done)
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
-
-  const agentTasks = tasks.filter((t) => t.board === 'agent')
-  const williamTasks = tasks.filter((t) => t.board === 'william')
 
   return (
     <main className="min-h-screen bg-background relative overflow-hidden">
@@ -352,17 +355,37 @@ export default function BoardPage() {
                   : 'text-foreground-muted hover:text-foreground border border-transparent'
               }`}
             >
-              進行中 ({tasks.length})
+              待辦 ({activeTasks.length})
             </button>
             <button
-              onClick={() => setTab('history')}
+              onClick={() => setTab('planned')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                tab === 'history'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                tab === 'planned'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'text-foreground-muted hover:text-foreground border border-transparent'
               }`}
             >
-              歷史 ({historyTasks.length})
+              規劃中 ({plannedTasks.length})
+            </button>
+            <button
+              onClick={() => setTab('backlog')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                tab === 'backlog'
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                  : 'text-foreground-muted hover:text-foreground border border-transparent'
+              }`}
+            >
+              長期 ({backlogTasks.length})
+            </button>
+            <button
+              onClick={() => setTab('done')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                tab === 'done'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'text-foreground-muted hover:text-foreground border border-transparent'
+              }`}
+            >
+              已完成 ({doneTasks.length})
             </button>
           </div>
         </header>
@@ -370,30 +393,44 @@ export default function BoardPage() {
         {/* Board */}
         {loading ? (
           <div className="text-center text-foreground-muted py-20">Loading...</div>
-        ) : tab === 'active' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BoardColumn
-              title="Agent 看板"
-              icon={<IconRobot color="#3b82f6" />}
-              tasks={agentTasks}
-              accentColor="#3b82f6"
-            />
-            <BoardColumn
-              title="William 看板"
-              icon={<IconUser color="#f59e0b" />}
-              tasks={williamTasks}
-              accentColor="#f59e0b"
-            />
-          </div>
-        ) : (
-          <BoardColumn
-            title="已完成任務"
-            icon={<IconHistory color="#10b981" />}
-            tasks={historyTasks}
-            accentColor="#10b981"
-            isHistory
-          />
-        )}
+        ) : (() => {
+          const currentTasks = tab === 'active' ? activeTasks
+                             : tab === 'planned' ? plannedTasks
+                             : tab === 'backlog' ? backlogTasks
+                             : doneTasks
+
+          const agentTasks = currentTasks.filter((t) => t.board === 'agent')
+          const williamTasks = currentTasks.filter((t) => t.board === 'william')
+
+          if (tab === 'done') {
+            return (
+              <BoardColumn
+                title="已完成任務"
+                icon={<IconHistory color="#10b981" />}
+                tasks={currentTasks}
+                accentColor="#10b981"
+                isHistory
+              />
+            )
+          }
+
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BoardColumn
+                title="Agent 看板"
+                icon={<IconRobot color="#3b82f6" />}
+                tasks={agentTasks}
+                accentColor="#3b82f6"
+              />
+              <BoardColumn
+                title="Travis 看板"
+                icon={<IconUser color="#f59e0b" />}
+                tasks={williamTasks}
+                accentColor="#f59e0b"
+              />
+            </div>
+          )
+        })()}
 
         {/* Footer */}
 <footer className="mt-14 text-center text-foreground-subtle text-xs tracking-wide">
