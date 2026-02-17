@@ -1,10 +1,10 @@
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { CredentialEncryption, validateApiKeyFormat, validateSecretKeyFormat } from '@/lib/encryption'
-import { ShioajiClient } from '@/lib/shioaji-client'
 
-// POST /api/trade/auth - Store Shioaji credentials (deprecated, use /credentials)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+// POST /api/trade/auth/credentials - Store Shioaji credentials
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
@@ -77,12 +77,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Log security event (optional - could be implemented later)
+    console.warn(`User ${user.id} stored Shioaji credentials (${simulation_mode ? 'simulation' : 'production'} mode)`)
+
     return NextResponse.json({
       success: true,
       message: '憑證設定成功',
       credential_id: data.id,
-      is_activated: false,
-      simulation_mode
+      is_activated: false
     })
 
   } catch (error: unknown) {
@@ -96,95 +98,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(
-      { success: false, error: 'INTERNAL_ERROR', message: '服務器錯誤' },
-      { status: 500 }
-    )
-  }
-}
-
-// GET /api/trade/auth - Get connection status (deprecated, use /status)
-export async function GET(_request: NextRequest) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'UNAUTHORIZED', message: '用戶未認證' },
-        { status: 401 }
-      )
-    }
-
-    // Get user credentials
-    const { data: credentials, error: credError } = await supabase
-      .from('user_shioaji_credentials')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-
-    if (credError || !credentials) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          is_connected: false,
-          connection_time: null,
-          api_calls_today: 0,
-          daily_quota: 10000,
-          bandwidth_used_mb: 0,
-          accounts: []
-        }
-      })
-    }
-
-    // Check if credentials are active
-    if (!credentials.is_active) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          is_connected: false,
-          connection_time: null,
-          api_calls_today: credentials.daily_api_calls || 0,
-          daily_quota: 10000,
-          bandwidth_used_mb: 0,
-          accounts: []
-        }
-      })
-    }
-
-    // Initialize Shioaji client
-    const shioajiClient = new ShioajiClient()
-
-    try {
-      // Get real-time connection status
-      const connectionStatus = await shioajiClient.getConnectionStatus(credentials)
-
-      return NextResponse.json({
-        success: true,
-        data: connectionStatus
-      })
-
-    } catch (shioajiError: unknown) {
-      // If Shioaji connection check fails, return cached status
-      console.warn(`Shioaji connection check failed for user ${user.id}:`, shioajiError instanceof Error ? shioajiError.message : String(shioajiError))
-      
-      return NextResponse.json({
-        success: true,
-        data: {
-          is_connected: false,
-          connection_time: credentials.last_login_at || credentials.created_at,
-          api_calls_today: credentials.daily_api_calls || 0,
-          daily_quota: 10000,
-          bandwidth_used_mb: 0.0,
-          accounts: [],
-          error: 'Shioaji 服務暫時無法連線'
-        }
-      })
-    }
-
-  } catch (error) {
-    console.error('API error:', error)
     return NextResponse.json(
       { success: false, error: 'INTERNAL_ERROR', message: '服務器錯誤' },
       { status: 500 }
