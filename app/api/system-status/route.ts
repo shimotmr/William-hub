@@ -1,6 +1,12 @@
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || ''
+)
 
 type SystemStatus = {
   tokenUsage: {
@@ -28,7 +34,6 @@ type SystemStatus = {
   timestamp: string
 }
 
-// Fallback data for Vercel deployment (real data fetched from Mac mini via direct API call)
 const FALLBACK_DATA: SystemStatus = {
   tokenUsage: { current: 0, limit: 200000, percentage: 0, weeklyQuotaUsed: false },
   sessions: { active: 0, total: 0, mainAgent: 0, subAgents: 0 },
@@ -39,51 +44,45 @@ const FALLBACK_DATA: SystemStatus = {
 
 export async function GET() {
   try {
-    // 嘗試從本地 Tailscale 端點獲取數據（如果在 Vercel 上會失敗，返回 fallback）
-    const MAC_MINI_ENDPOINT = process.env.MAC_MINI_STATUS_URL || 'http://100.103.23.67:18790/system-status'
-    
-    // 設置短超時，避免 Vercel 等太久
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 2000)
-    
-    try {
-      const response = await fetch(MAC_MINI_ENDPOINT, {
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' }
-      })
-      clearTimeout(timeoutId)
-      
-      if (response.ok) {
-        const data: SystemStatus = await response.json()
-        
-        // 狀態判斷邏輯
-        let systemStatus: 'healthy' | 'warning' | 'error' = 'healthy'
+    const { data, error } = await supabase
+      .from('system_status')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
 
-        // Token usage 警告
-        if (data.tokenUsage.percentage > 90 || data.tokenUsage.weeklyQuotaUsed) {
-          systemStatus = 'error'
-        } else if (data.tokenUsage.percentage > 70) {
-          systemStatus = 'warning'
-        }
-
-        // 磁碟空間警告
-        if (data.storage.diskUsage > 80) {
-          systemStatus = systemStatus === 'error' ? 'error' : 'warning'
-        }
-
-        // 更新狀態
-        data.system.status = systemStatus
-        
-        return NextResponse.json(data)
-      }
-    } catch (fetchError) {
-      clearTimeout(timeoutId)
-      console.log('Mac mini endpoint not reachable, using fallback data')
+    if (error || !data) {
+      console.error('Supabase query error:', error)
+      return NextResponse.json(FALLBACK_DATA)
     }
-    
-    // Fallback: 返回預設數據
-    return NextResponse.json(FALLBACK_DATA)
-    
+
+    const result: SystemStatus = {
+      tokenUsage: {
+        current: data.token_usage?.current ?? 0,
+        limit: data.token_usage?.limit ?? 200000,
+        percentage: data.token_usage?.percentage ?? 0,
+        weeklyQuotaUsed: (data.token_usage?.percentage ?? 0) > 95,
+      },
+      sessions: {
+        active: data.sessions?.active ?? 0,
+        total: data.sessions?.total ?? 0,
+        mainAgent: data.sessions?.mainAgent ?? 0,
+        subAgents: data.sessions?.subAgents ?? 0,
+      },
+      storage: {
+        openclaw: data.storage?.openclaw ?? 'N/A',
+        diskUsage: data.storage?.diskUsage ?? 0,
+        available: data.storage?.available ?? 'N/A',
+      },
+      system: {
+        uptime: data.system_info?.uptime ?? 'N/A',
+        lastRestart: data.system_info?.lastRestart ?? 'N/A',
+        status: data.system_info?.status ?? 'healthy',
+      },
+      timestamp: data.created_at,
+    }
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('System status API error:', error)
     return NextResponse.json(FALLBACK_DATA)
