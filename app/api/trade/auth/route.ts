@@ -1,13 +1,13 @@
-import { cookies } from 'next/headers'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-server'
 import { CredentialEncryption, validateApiKeyFormat, validateSecretKeyFormat } from '@/lib/encryption'
 import { ShioajiClient } from '@/lib/shioaji-client'
 
 // POST /api/trade/auth - Store Shioaji credentials (deprecated, use /credentials)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 // GET /api/trade/auth - Get connection status (deprecated, use /status)
 export async function GET(_request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()

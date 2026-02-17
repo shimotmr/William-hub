@@ -1,12 +1,12 @@
-import { cookies } from 'next/headers'
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase-server'
 import { ShioajiClient } from '@/lib/shioaji-client'
 
 // GET /api/trade/auth/status - Get Shioaji connection status
 export async function GET(_request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
