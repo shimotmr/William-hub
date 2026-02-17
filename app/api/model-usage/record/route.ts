@@ -76,10 +76,129 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle other methods
-export async function GET() {
-  return NextResponse.json(
-    { error: 'Method not allowed. Use POST to record usage.' },
-    { status: 405 }
-  )
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    
+    // Pagination
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '50', 10)
+    const offset = (page - 1) * limit
+    
+    // Filters
+    const modelProvider = searchParams.get('model')
+    const agentId = searchParams.get('agent')
+    const startDate = searchParams.get('start_date')
+    const endDate = searchParams.get('end_date')
+    const sessionKey = searchParams.get('search')
+    
+    // Build query
+    let query = supabase
+      .from('model_usage')
+      .select('*', { count: 'exact' })
+    
+    // Apply filters
+    if (modelProvider && modelProvider !== '') {
+      query = query.eq('model_provider', modelProvider)
+    }
+    
+    if (agentId && agentId !== '') {
+      query = query.eq('agent_id', agentId)
+    }
+    
+    if (startDate && startDate !== '') {
+      query = query.gte('created_at', startDate)
+    }
+    
+    if (endDate && endDate !== '') {
+      // Add one day to include the end date fully
+      const endDateObj = new Date(endDate)
+      endDateObj.setDate(endDateObj.getDate() + 1)
+      query = query.lt('created_at', endDateObj.toISOString())
+    }
+    
+    if (sessionKey && sessionKey !== '') {
+      query = query.ilike('session_key', `%${sessionKey}%`)
+    }
+    
+    // Order and paginate
+    query = query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+    
+    const { data: records, error, count } = await query
+    
+    if (error) {
+      console.error('Supabase query error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
+    // Get summary stats
+    let summaryQuery = supabase
+      .from('model_usage')
+      .select('prompt_count, tokens_in, tokens_out, cost_usd', { count: 'exact' })
+    
+    if (modelProvider && modelProvider !== '') {
+      summaryQuery = summaryQuery.eq('model_provider', modelProvider)
+    }
+    if (agentId && agentId !== '') {
+      summaryQuery = summaryQuery.eq('agent_id', agentId)
+    }
+    if (startDate && startDate !== '') {
+      summaryQuery = summaryQuery.gte('created_at', startDate)
+    }
+    if (endDate && endDate !== '') {
+      const endDateObj = new Date(endDate)
+      endDateObj.setDate(endDateObj.getDate() + 1)
+      summaryQuery = summaryQuery.lt('created_at', endDateObj.toISOString())
+    }
+    
+    const { data: summaryData } = await summaryQuery
+    
+    const totalPrompts = summaryData?.reduce((sum, r) => sum + (Number(r.prompt_count) || 0), 0) || 0
+    const totalTokensIn = summaryData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0), 0) || 0
+    const totalTokensOut = summaryData?.reduce((sum, r) => sum + (Number(r.tokens_out) || 0), 0) || 0
+    const totalCost = summaryData?.reduce((sum, r) => sum + (Number(r.cost_usd) || 0), 0) || 0
+    
+    // Get unique values for filters
+    const { data: modelProviders } = await supabase
+      .from('model_usage')
+      .select('model_provider')
+      .order('model_provider')
+    
+    const { data: agentIds } = await supabase
+      .from('model_usage')
+      .select('agent_id')
+      .order('agent_id')
+    
+    const uniqueProviders = Array.from(new Set(modelProviders?.map(r => r.model_provider) || []))
+    const uniqueAgents = Array.from(new Set(agentIds?.map(r => r.agent_id) || []))
+    
+    return NextResponse.json({
+      status: 'success',
+      data: {
+        records: records || [],
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          total_pages: Math.ceil((count || 0) / limit)
+        },
+        summary: {
+          total_prompts: totalPrompts,
+          total_tokens_in: totalTokensIn,
+          total_tokens_out: totalTokensOut,
+          total_tokens: totalTokensIn + totalTokensOut,
+          total_cost: Math.round(totalCost * 10000) / 10000
+        },
+        filters: {
+          models: uniqueProviders,
+          agents: uniqueAgents
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Error in /api/model-usage/record:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

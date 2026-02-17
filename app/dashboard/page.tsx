@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Doughnut } from 'react-chartjs-2'
 
+import AgentRanking from '@/app/components/AgentRanking'
 import ModelQuotaOverview from '@/app/components/ModelQuotaOverview'
 import ModelTrendChart from '@/app/components/ModelTrendChart'
 import SystemMonitor from '@/app/components/SystemMonitor'
@@ -210,6 +211,9 @@ export default function DashboardPage() {
 
             {/* Model Usage Trend Chart */}
             <ModelTrendChart />
+
+            {/* Agent Ranking - Doughnut Chart */}
+            <AgentRanking />
 
             {/* KPI Stats Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
