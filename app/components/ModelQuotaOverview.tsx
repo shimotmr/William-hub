@@ -1,5 +1,6 @@
 'use client'
 
+// Deployment trigger: Force Vercel redeploy
 import {
   Chart as ChartJS,
   CategoryScale,
