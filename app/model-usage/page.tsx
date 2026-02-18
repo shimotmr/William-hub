@@ -77,14 +77,24 @@ export default function ModelUsageDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    console.log('[ModelUsage] Starting fetch...')
+    // Timeout fallback - ensure loading state is always cleared
+    const timeoutId = setTimeout(() => {
+      console.log('[ModelUsage] Timeout reached, clearing loading state')
+      setLoading(false)
+      setError('Request timeout - please refresh')
+    }, 10000) // 10 second timeout
+
     fetch('/api/model-usage')
       .then(res => {
         console.log('[ModelUsage] Response status:', res.status)
+        if (!res.ok) {
+          throw new Error(`HTTP error: ${res.status}`)
+        }
         return res.json()
       })
       .then(result => {
         console.log('[ModelUsage] API result:', result)
+        clearTimeout(timeoutId)
         if (result.status === 'success') {
           setData(result)
         } else {
@@ -93,7 +103,8 @@ export default function ModelUsageDashboard() {
       })
       .catch(err => {
         console.error('[ModelUsage] Fetch error:', err)
-        setError(err.message)
+        clearTimeout(timeoutId)
+        setError(err.message || 'Network error')
       })
       .finally(() => {
         console.log('[ModelUsage] Loading complete')
@@ -103,8 +114,14 @@ export default function ModelUsageDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white p-6 flex items-center justify-center">
-        <div className="animate-pulse text-gray-400">載入中...</div>
+      <div className="min-h-screen bg-gray-950 text-white p-6 flex flex-col items-center justify-center">
+        <div className="animate-pulse text-gray-400 mb-4">載入中...</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="text-xs text-gray-500 hover:text-white"
+        >
+          [Debug] Click to reload
+        </button>
       </div>
     )
   }
@@ -112,7 +129,13 @@ export default function ModelUsageDashboard() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-950 text-white p-6">
-        <div className="text-red-400">錯誤: {error}</div>
+        <div className="text-red-400 mb-4">錯誤: {error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+        >
+          重新載入
+        </button>
       </div>
     )
   }
