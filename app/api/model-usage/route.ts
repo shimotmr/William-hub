@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const windowHours = searchParams.get('window') ? parseInt(searchParams.get('window')!) : 24
+    const windowHours = searchParams.get('window') ? parseInt(searchParams.get('window')!) : 48
     
     // Calculate time window
     const windowStart = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString()
