@@ -8,104 +8,109 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current window start (last 5 hours for rolling window)
-    const now = new Date()
-    const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000)
+    const { searchParams } = new URL(request.url)
+    const windowHours = searchParams.get('window') ? parseInt(searchParams.get('window')!) : 5
     
-    // Get model usage from the past 5 hours (rolling window)
+    // Calculate time window
+    const windowStart = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString()
+
+    // Get usage data within window from model_usage table
     const { data: usageData, error: usageError } = await supabase
       .from('model_usage')
       .select('model_provider, model_id, tokens_in, tokens_out, cost_usd, created_at')
-      .gte('created_at', fiveHoursAgo.toISOString())
+      .gte('created_at', windowStart)
 
     if (usageError) {
-      console.error('Usage query error:', usageError)
       return NextResponse.json({ error: usageError.message }, { status: 500 })
     }
 
-    // Get all quotas
-    const { data: quotasData, error: quotasError } = await supabase
+    // Get quota data from model_quotas table
+    const { data: quotaData, error: quotaError } = await supabase
       .from('model_quotas')
-      .select('model_provider, model_id, quota_type, quota_limit, quota_window_hours')
-      .eq('quota_type', 'rolling')
+      .select('model_provider, model_id, quota_limit, quota_type, quota_window_hours')
 
-    if (quotasError) {
-      console.error('Quotas query error:', quotasError)
-      return NextResponse.json({ error: quotasError.message }, { status: 500 })
+    if (quotaError) {
+      return NextResponse.json({ error: quotaError.message }, { status: 500 })
     }
 
     // Aggregate usage by model
-    const usageByModel: Record<string, { 
-      provider: string; 
-      model: string; 
-      quotaUsed: number; 
-      quotaLimit: number;
-      windowType: string;
-    }> = {}
-
+    const usageByModel: Record<string, { tokensIn: number; tokensOut: number; cost: number }> = {}
+    
     for (const row of usageData || []) {
       const key = `${row.model_provider}/${row.model_id}`
       if (!usageByModel[key]) {
-        usageByModel[key] = {
-          provider: row.model_provider,
-          model: row.model_id,
-          quotaUsed: 0,
-          quotaLimit: 0,
-          windowType: '5hr'
-        }
+        usageByModel[key] = { tokensIn: 0, tokensOut: 0, cost: 0 }
       }
-      usageByModel[key].quotaUsed += Number(row.tokens_in || 0) + Number(row.tokens_out || 0)
+      usageByModel[key].tokensIn += Number(row.tokens_in) || 0
+      usageByModel[key].tokensOut += Number(row.tokens_out) || 0
+      usageByModel[key].cost += Number(row.cost_usd) || 0
     }
 
-    // Map quotas to usage
-    for (const quota of quotasData || []) {
-      const key = `${quota.model_provider}/${quota.model_id}`
-      if (usageByModel[key]) {
-        usageByModel[key].quotaLimit = Number(quota.quota_limit)
-        usageByModel[key].windowType = `${quota.quota_window_hours || 5}hr`
-      } else {
-        // Add model with quota even if no recent usage
-        usageByModel[key] = {
-          provider: quota.model_provider,
-          model: quota.model_id,
-          quotaUsed: 0,
-          quotaLimit: Number(quota.quota_limit),
-          windowType: `${quota.quota_window_hours || 5}hr`
-        }
-      }
-    }
+    // Build models array with quota matching
+    const models: Array<{
+      display_name: string
+      usage_percentage: number
+      quota_used: number
+      quota_limit: number
+      status: 'healthy' | 'warning' | 'critical'
+      window_type: string
+    }> = []
 
-    // Format response for frontend
-    const models = Object.values(usageByModel).map((item) => {
-      const usagePercentage = item.quotaLimit > 0 
-        ? Math.round((item.quotaUsed / item.quotaLimit) * 100 * 10) / 10 
-        : 0
+    let healthyCount = 0
+    let warningCount = 0
+    let criticalCount = 0
+
+    // Map usage to quotas
+    for (const [modelKey, usage] of Object.entries(usageByModel)) {
+      const [provider, modelId] = modelKey.split('/')
+      
+      // Find matching quota (prefer rolling window, then others)
+      const matchingQuota = quotaData?.find(
+        q => q.model_provider === provider && q.model_id === modelId
+      )
+
+      const quotaLimit = matchingQuota?.quota_limit || 1000 // Default if no quota
+      const windowType = matchingQuota?.quota_type || 'rolling'
+      
+      // Calculate usage percentage (using total tokens)
+      const quotaUsed = usage.tokensIn + usage.tokensOut
+      const usagePercentage = Math.min(Math.round((quotaUsed / quotaLimit) * 100), 100)
       
       // Determine status
-      let status: 'healthy' | 'warning' | 'critical' = 'healthy'
-      if (usagePercentage >= 100) {
-        status = 'critical'
-      } else if (usagePercentage >= 80) {
+      let status: 'healthy' | 'warning' | 'critical'
+      if (usagePercentage < 70) {
+        status = 'healthy'
+        healthyCount++
+      } else if (usagePercentage < 90) {
         status = 'warning'
+        warningCount++
+      } else {
+        status = 'critical'
+        criticalCount++
       }
 
       // Format display name
-      const displayName = formatDisplayName(item.provider, item.model)
+      const displayName = formatModelName(provider, modelId)
 
-      return {
+      models.push({
         display_name: displayName,
         usage_percentage: usagePercentage,
-        quota_used: item.quotaUsed,
-        quota_limit: item.quotaLimit,
+        quota_used: quotaUsed,
+        quota_limit: quotaLimit,
         status,
-        window_type: item.windowType
-      }
-    })
+        window_type: windowType
+      })
+    }
 
-    // Count statuses
-    const healthyCount = models.filter(m => m.status === 'healthy').length
-    const warningCount = models.filter(m => m.status === 'warning').length
-    const criticalCount = models.filter(m => m.status === 'critical').length
+    // If no usage data, return empty models array with zeros
+    if (models.length === 0) {
+      return NextResponse.json({
+        models: [],
+        healthy_count: 0,
+        warning_count: 0,
+        critical_count: 0
+      })
+    }
 
     return NextResponse.json({
       models,
@@ -113,30 +118,34 @@ export async function GET(request: NextRequest) {
       warning_count: warningCount,
       critical_count: criticalCount
     })
+
   } catch (error) {
     console.error('Error in /api/model-usage:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-function formatDisplayName(provider: string, model: string): string {
-  // Handle special cases for display names
-  if (provider === 'anthropic') {
-    if (model === 'claude-opus-4-6') return 'Claude Opus 4.6'
-    if (model === 'claude-sonnet-4-20250514') return 'Claude Sonnet 4'
-    if (model.includes('claude')) return model.replace('claude-', 'Claude ').replace(/-/g, ' ')
+// Helper function to format model display names
+function formatModelName(provider: string, modelId: string): string {
+  const providerNames: Record<string, string> = {
+    'anthropic': 'Anthropic',
+    'openai': 'OpenAI',
+    'google': 'Google',
+    'minimax': 'MiniMax',
+    'moonshot': 'Moonshot'
   }
-  if (provider === 'openai') {
-    if (model.includes('gpt')) return model.toUpperCase().replace(/-/g, ' ')
+
+  const modelNames: Record<string, string> = {
+    'claude-sonnet-4': 'Claude Sonnet 4',
+    'claude-opus-4-6': 'Claude Opus 4.6',
+    'gpt-4o': 'GPT-4o',
+    'gemini-2.5-flash': 'Gemini 2.5 Flash',
+    'MiniMax-M2.5': 'MiniMax M2.5',
+    'moonshot-v1-128k': 'Moonshot V1 128K'
   }
-  if (provider === 'minimax') {
-    return model.toUpperCase()
-  }
-  if (provider === 'google') {
-    return model.replace(/gemini-/gi, 'Gemini ').replace(/-/g, ' ')
-  }
-  if (provider === 'moonshot') {
-    return model.replace(/moonshot-/i, 'Moonshot ').replace(/-/g, ' ')
-  }
-  return `${provider}/${model}`
+
+  const providerName = providerNames[provider] || provider
+  const modelName = modelNames[modelId] || modelId
+
+  return `${providerName} ${modelName}`
 }
