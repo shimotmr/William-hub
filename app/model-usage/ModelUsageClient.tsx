@@ -53,6 +53,10 @@ interface ApiResponse {
   critical_count?: number
 }
 
+interface Props {
+  initialData: ApiResponse | null
+}
+
 const providerColors: Record<string, string> = {
   anthropic: '#8b5cf6',
   openai: '#10b981',
@@ -71,27 +75,27 @@ function formatCost(num: number): string {
   return '$' + num.toFixed(4)
 }
 
-export default function ModelUsageDashboard() {
-  const [data, setData] = useState<ApiResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+export default function ModelUsageClient({ initialData }: Props) {
+  const [data, setData] = useState<ApiResponse | null>(initialData)
+  const [loading, setLoading] = useState(!initialData)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Create abort controller for cleanup
-    const controller = new AbortController()
-    
+    // If we have initial data from server, skip client fetch
+    if (initialData) {
+      console.log('[ModelUsage] Using initial data from server')
+      setLoading(false)
+      return
+    }
+
     // Timeout fallback - ensure loading state is always cleared
     const timeoutId = setTimeout(() => {
       console.log('[ModelUsage] Timeout reached, clearing loading state')
-      if (loading) {
-        setLoading(false)
-        setError('請求超時，請重新整理頁面')
-      }
+      setLoading(false)
+      setError('Request timeout - please refresh')
     }, 10000)
 
-    console.log('[ModelUsage] Starting fetch...')
-    
-    fetch('/api/model-usage', { signal: controller.signal })
+    fetch('/api/model-usage')
       .then(res => {
         console.log('[ModelUsage] Response status:', res.status)
         if (!res.ok) {
@@ -102,44 +106,32 @@ export default function ModelUsageDashboard() {
       .then(result => {
         console.log('[ModelUsage] API result:', result)
         clearTimeout(timeoutId)
-        
         if (result.status === 'success') {
           setData(result)
-          setError(null)
         } else {
-          setError(result.error || '載入資料失敗')
+          setError(result.error || 'Failed to load data')
         }
       })
       .catch(err => {
         console.error('[ModelUsage] Fetch error:', err)
         clearTimeout(timeoutId)
-        if (err.name === 'AbortError') {
-          console.log('[ModelUsage] Request was aborted')
-          return
-        }
-        setError(err.message || '網路錯誤')
+        setError(err.message || 'Network error')
       })
       .finally(() => {
         console.log('[ModelUsage] Loading complete')
         setLoading(false)
       })
-      
-    return () => {
-      controller.abort()
-      clearTimeout(timeoutId)
-    }
-  }, [])
+  }, [initialData])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 text-white p-6 flex flex-col items-center justify-center">
         <div className="animate-pulse text-gray-400 mb-4">載入中...</div>
-        <div className="text-xs text-gray-600 mb-2">正在載入模型使用資料...</div>
         <button 
           onClick={() => window.location.reload()} 
-          className="text-xs text-blue-400 hover:text-white mt-2"
+          className="text-xs text-gray-500 hover:text-white"
         >
-          [Debug] 點擊重新載入
+          [Debug] Click to reload
         </button>
       </div>
     )
@@ -154,7 +146,7 @@ export default function ModelUsageDashboard() {
           </Link>
           <h1 className="text-2xl font-bold">模型使用統計</h1>
         </div>
-        <div className="text-red-400 mb-4">錯誤: {error || '無法載入資料'}</div>
+        <div className="text-red-400 mb-4">錯誤: {error || 'No data available'}</div>
         <button 
           onClick={() => window.location.reload()} 
           className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
