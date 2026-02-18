@@ -184,31 +184,68 @@ export default function GrowthPage() {
             ) : (
               <div className="max-h-80 overflow-y-auto pr-2">
                 <div className="space-y-4">
-                  {data.capabilities.map((cap) => (
-                    <div key={cap.id} className="flex gap-3 group">
-                      <div className="flex-shrink-0 pt-1">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full" />
-                      </div>
-                      <div className="flex-1 pb-4 border-b border-border/50 last:border-0">
-                        <div className="flex items-start gap-2 mb-1">
-                          <BadgeCheck className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                          <span className="font-medium text-foreground">{cap.title}</span>
+                  {data.capabilities.map((cap) => {
+                    // 檢查是否為 BT 突破記錄
+                    const isBreakthroughRecord = cap.title.includes('BT-001') || cap.title.includes('BT-002')
+                    const breakthroughId = cap.title.includes('BT-001') ? 'bt-001' : cap.title.includes('BT-002') ? 'bt-002' : null
+                    
+                    const content = (
+                      <div className="flex gap-3 group">
+                        <div className="flex-shrink-0 pt-1">
+                          <div className={`w-2 h-2 rounded-full ${isBreakthroughRecord ? 'bg-yellow-400' : 'bg-blue-400'}`} />
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-foreground-muted ml-6">
-                          <span className="px-2 py-0.5 rounded-full bg-background-elevated">
-                            {cap.category}
-                          </span>
-                          <span>
-                            {new Date(cap.added_at).toLocaleDateString('zh-TW', { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })}
-                          </span>
+                        <div className="flex-1 pb-4 border-b border-border/50 last:border-0">
+                          <div className="flex items-start gap-2 mb-1">
+                            <BadgeCheck className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isBreakthroughRecord ? 'text-yellow-400' : 'text-blue-400'}`} />
+                            <span className={`font-medium ${isBreakthroughRecord ? 'text-yellow-400' : 'text-foreground'}`}>
+                              {cap.title}
+                            </span>
+                            {isBreakthroughRecord && (
+                              <span className="text-xs px-2 py-0.5 bg-yellow-400/20 text-yellow-400 rounded-full ml-2">
+                                點擊查看詳情
+                              </span>
+                            )}
+                          </div>
+                          {cap.description && (
+                            <p className="text-sm text-foreground-muted ml-6 mb-2">
+                              {cap.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 text-xs text-foreground-muted ml-6">
+                            <span className={`px-2 py-0.5 rounded-full ${isBreakthroughRecord ? 'bg-yellow-400/20 text-yellow-400' : 'bg-background-elevated'}`}>
+                              {cap.category}
+                            </span>
+                            <span>
+                              {new Date(cap.added_at).toLocaleDateString('zh-TW', { 
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit' 
+                              })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+
+                    // 如果是突破記錄，包裹在可點擊的連結中
+                    if (isBreakthroughRecord && breakthroughId) {
+                      return (
+                        <a
+                          key={cap.id}
+                          href={`/growth/${breakthroughId}`}
+                          className="block hover:bg-background-elevated/50 rounded-lg p-3 -m-3 transition-colors cursor-pointer"
+                        >
+                          {content}
+                        </a>
+                      )
+                    }
+
+                    return (
+                      <div key={cap.id}>
+                        {content}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
