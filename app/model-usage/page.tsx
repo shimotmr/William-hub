@@ -77,17 +77,28 @@ export default function ModelUsageDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('[ModelUsage] Starting fetch...')
     fetch('/api/model-usage')
-      .then(res => res.json())
+      .then(res => {
+        console.log('[ModelUsage] Response status:', res.status)
+        return res.json()
+      })
       .then(result => {
+        console.log('[ModelUsage] API result:', result)
         if (result.status === 'success') {
           setData(result)
         } else {
           setError(result.error || 'Failed to load data')
         }
       })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+      .catch(err => {
+        console.error('[ModelUsage] Fetch error:', err)
+        setError(err.message)
+      })
+      .finally(() => {
+        console.log('[ModelUsage] Loading complete')
+        setLoading(false)
+      })
   }, [])
 
   if (loading) {
