@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const windowHours = searchParams.get('window') ? parseInt(searchParams.get('window')!) : 48
+    const windowHours = searchParams.get('window') ? parseInt(searchParams.get('window')!) : 24
     
     // Calculate time window
     const windowStart = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString()
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Get usage data within window from model_usage table
     const { data: usageData, error: usageError } = await supabase
       .from('model_usage')
-      .select('model_provider, model_id, tokens_in, tokens_out, cost_usd, created_at')
+      .select('model_provider, model_id, tokens_in, tokens_out, cost_usd, created_at, agent_id')
       .gte('created_at', windowStart)
 
     if (usageError) {
@@ -34,19 +34,60 @@ export async function GET(request: NextRequest) {
     }
 
     // Aggregate usage by model
-    const usageByModel: Record<string, { tokensIn: number; tokensOut: number; cost: number }> = {}
+    const usageByModel: Record<string, { tokens: number; cost: number; count: number; provider: string; model: string }> = {}
     
     for (const row of usageData || []) {
       const key = `${row.model_provider}/${row.model_id}`
       if (!usageByModel[key]) {
-        usageByModel[key] = { tokensIn: 0, tokensOut: 0, cost: 0 }
+        usageByModel[key] = { tokens: 0, cost: 0, count: 0, provider: row.model_provider, model: row.model_id }
       }
-      usageByModel[key].tokensIn += Number(row.tokens_in) || 0
-      usageByModel[key].tokensOut += Number(row.tokens_out) || 0
+      usageByModel[key].tokens += (Number(row.tokens_in) || 0) + (Number(row.tokens_out) || 0)
       usageByModel[key].cost += Number(row.cost_usd) || 0
+      usageByModel[key].count += 1
     }
 
-    // Build models array with quota matching
+    // Model distribution (for frontend compatibility)
+    const modelDistribution = Object.entries(usageByModel).map(([name, stats]) => ({
+      name,
+      provider: stats.provider,
+      model: stats.model,
+      tokens: stats.tokens,
+      cost: stats.cost,
+      count: stats.count,
+    })).sort((a, b) => b.cost - a.cost)
+
+    // Agent ranking
+    const usageByAgent: Record<string, { tokens: number; cost: number; count: number }> = {}
+    
+    for (const row of usageData || []) {
+      const agent = row.agent_id || 'unknown'
+      if (!usageByAgent[agent]) {
+        usageByAgent[agent] = { tokens: 0, cost: 0, count: 0 }
+      }
+      usageByAgent[agent].tokens += (Number(row.tokens_in) || 0) + (Number(row.tokens_out) || 0)
+      usageByAgent[agent].cost += Number(row.cost_usd) || 0
+      usageByAgent[agent].count += 1
+    }
+
+    const agentRanking = Object.entries(usageByAgent).map(([agent, stats]) => ({
+      agent,
+      total_tokens: stats.tokens,
+      total_cost: stats.cost,
+      request_count: stats.count,
+      success_rate: 100, // Assume 100% since we don't have failure data in model_usage
+    })).sort((a, b) => b.total_cost - a.total_cost)
+
+    // Today's summary
+    const todaySummary = {
+      total_requests: usageData?.length || 0,
+      total_tokens_in: usageData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0), 0) || 0,
+      total_tokens_out: usageData?.reduce((sum, r) => sum + (Number(r.tokens_out) || 0), 0) || 0,
+      total_tokens: usageData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0), 0) || 0,
+      total_cost: usageData?.reduce((sum, r) => sum + (Number(r.cost_usd) || 0), 0) || 0,
+      success_rate: 100,
+    }
+
+    // Build new format models for quota tracking
     const models: Array<{
       display_name: string
       usage_percentage: number
@@ -60,23 +101,19 @@ export async function GET(request: NextRequest) {
     let warningCount = 0
     let criticalCount = 0
 
-    // Map usage to quotas
     for (const [modelKey, usage] of Object.entries(usageByModel)) {
       const [provider, modelId] = modelKey.split('/')
       
-      // Find matching quota (prefer rolling window, then others)
       const matchingQuota = quotaData?.find(
         q => q.model_provider === provider && q.model_id === modelId
       )
 
-      const quotaLimit = matchingQuota?.quota_limit || 1000 // Default if no quota
+      const quotaLimit = matchingQuota?.quota_limit || 1000
       const windowType = matchingQuota?.quota_type || 'rolling'
       
-      // Calculate usage percentage (using total tokens)
-      const quotaUsed = usage.tokensIn + usage.tokensOut
+      const quotaUsed = usage.tokens
       const usagePercentage = Math.min(Math.round((quotaUsed / quotaLimit) * 100), 100)
       
-      // Determine status
       let status: 'healthy' | 'warning' | 'critical'
       if (usagePercentage < 70) {
         status = 'healthy'
@@ -89,11 +126,8 @@ export async function GET(request: NextRequest) {
         criticalCount++
       }
 
-      // Format display name
-      const displayName = formatModelName(provider, modelId)
-
       models.push({
-        display_name: displayName,
+        display_name: formatModelName(provider, modelId),
         usage_percentage: usagePercentage,
         quota_used: quotaUsed,
         quota_limit: quotaLimit,
@@ -102,17 +136,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // If no usage data, return empty models array with zeros
-    if (models.length === 0) {
-      return NextResponse.json({
-        models: [],
-        healthy_count: 0,
-        warning_count: 0,
-        critical_count: 0
-      })
-    }
-
+    // Return both formats for compatibility
     return NextResponse.json({
+      status: 'success',
+      data: {
+        today: todaySummary,
+        modelDistribution,
+        agentRanking,
+      },
+      // New format fields
       models,
       healthy_count: healthyCount,
       warning_count: warningCount,
