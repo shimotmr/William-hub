@@ -112,13 +112,14 @@ export async function GET(request: NextRequest) {
       const windowType = matchingQuota?.quota_type || 'rolling'
       
       const quotaUsed = usage.tokens
-      const usagePercentage = Math.min(Math.round((quotaUsed / quotaLimit) * 100), 100)
+      // Allow percentage over 100% to show quota overrun
+      const usagePercentage = Math.round((quotaUsed / quotaLimit) * 100)
       
       let status: 'healthy' | 'warning' | 'critical'
       if (usagePercentage < 70) {
         status = 'healthy'
         healthyCount++
-      } else if (usagePercentage < 90) {
+      } else if (usagePercentage < 100) {
         status = 'warning'
         warningCount++
       } else {
