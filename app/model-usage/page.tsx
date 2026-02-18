@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Activity, DollarSign, Zap, CheckCircle, PieChart, Trophy } from 'lucide-react'
+import { ArrowLeft, Activity, DollarSign, Zap, CheckCircle, PieChart, Trophy, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
@@ -31,6 +31,15 @@ interface AgentStat {
   success_rate: number
 }
 
+interface ModelQuota {
+  display_name: string
+  usage_percentage: number
+  quota_used: number
+  quota_limit: number
+  status: 'healthy' | 'warning' | 'critical'
+  window_type: string
+}
+
 interface ApiResponse {
   status: string
   data: {
@@ -38,6 +47,10 @@ interface ApiResponse {
     modelDistribution: ModelStat[]
     agentRanking: AgentStat[]
   }
+  models?: ModelQuota[]
+  healthy_count?: number
+  warning_count?: number
+  critical_count?: number
 }
 
 const providerColors: Record<string, string> = {
@@ -94,6 +107,10 @@ export default function ModelUsageDashboard() {
   }
 
   const { today, modelDistribution, agentRanking } = data?.data || {}
+  const models = data?.models || []
+  const healthyCount = data?.healthy_count || 0
+  const warningCount = data?.warning_count || 0
+  const criticalCount = data?.critical_count || 0
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
@@ -105,6 +122,73 @@ export default function ModelUsageDashboard() {
         <h1 className="text-2xl font-bold">模型使用統計</h1>
         <span className="text-gray-500 text-sm ml-auto">{new Date().toLocaleDateString('zh-TW')}</span>
       </div>
+
+      {/* Quota Status Overview */}
+      {models.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <AlertCircle size={18} className="text-gray-400" />
+            配額使用狀態
+          </h2>
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-center gap-3">
+              <CheckCircle2 size={24} className="text-green-400" />
+              <div>
+                <div className="text-2xl font-bold text-green-400">{healthyCount}</div>
+                <div className="text-sm text-gray-400">健康 (Healthy)</div>
+              </div>
+            </div>
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-center gap-3">
+              <AlertTriangle size={24} className="text-yellow-400" />
+              <div>
+                <div className="text-2xl font-bold text-yellow-400">{warningCount}</div>
+                <div className="text-sm text-gray-400">警告 (Warning)</div>
+              </div>
+            </div>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle size={24} className="text-red-400" />
+              <div>
+                <div className="text-2xl font-bold text-red-400">{criticalCount}</div>
+                <div className="text-sm text-gray-400">緊急 (Critical)</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Model Quota Cards */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {models.map((model, i) => (
+              <div key={i} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-medium truncate">{model.display_name}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    model.status === 'critical' ? 'bg-red-500/20 text-red-400' :
+                    model.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-green-500/20 text-green-400'
+                  }`}>
+                    {model.status === 'critical' ? '緊急' : model.status === 'warning' ? '警告' : '健康'}
+                  </span>
+                </div>
+                <div className="text-3xl font-bold mb-1">{model.usage_percentage}%</div>
+                <div className="text-xs text-gray-500 mb-3">
+                  {model.quota_used.toLocaleString()} / {model.quota_limit.toLocaleString()} tokens
+                </div>
+                {/* Progress Bar */}
+                <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-2">
+                  <div 
+                    className={`h-full rounded-full transition-all ${
+                      model.status === 'critical' ? 'bg-red-500' :
+                      model.status === 'warning' ? 'bg-yellow-500' :
+                      'bg-green-500'
+                    }`}
+                    style={{ width: `${Math.min(model.usage_percentage, 100)}%` }}
+                  />
+                </div>
+                <div className="text-xs text-gray-400">{model.window_type} window</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Today's Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
