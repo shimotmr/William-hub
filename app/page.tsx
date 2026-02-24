@@ -6,8 +6,9 @@
 import dynamic from 'next/dynamic'
 import { useState, useEffect } from 'react'
 
-const ThemeToggle = dynamic(() => import('./components/ThemeToggle').then(mod => ({ default: mod.ThemeToggle })), {
+const ThemeToggle = dynamic(() => import('./components/ThemeToggleWrapper'), {
   ssr: false,
+  loading: () => <div className="w-10 h-10" />
 })
 
 // No default agents - load dynamically from API
@@ -78,6 +79,24 @@ const apps = [
     accent: '#f59e0b',
     accentBg: 'rgba(245,158,11,0.08)',
     borderColor: 'rgba(245,158,11,0.25)',
+  },
+  {
+    name: 'Agent Prompts',
+    desc: 'Agent 系統提示詞模板庫',
+    url: '/prompts',
+    tag: 'NEW',
+    accent: '#8b5cf6',
+    accentBg: 'rgba(139,92,246,0.08)',
+    borderColor: 'rgba(139,92,246,0.25)',
+  },
+  {
+    name: 'Disk Health',
+    desc: '磁碟健康度監控與清理記錄',
+    url: '/disk-health',
+    tag: 'NEW',
+    accent: '#10b981',
+    accentBg: 'rgba(16,185,129,0.08)',
+    borderColor: 'rgba(16,185,129,0.25)',
   },
   {
     name: 'Dashboard',
@@ -338,12 +357,27 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Fetch recent tasks from board_tasks - mix of active and recently completed
-    Promise.all([
-      fetch('/api/board?category=active').then(r => r.json()),
-      fetch('/api/board?category=done').then(r => r.json())
-    ])
-      .then(([activeTasks, doneTasks]) => {
+    const loadTasks = async () => {
+      try {
+        console.log('🔍 William Hub - 載入任務資料...')
+        
+        const [activeResponse, doneResponse] = await Promise.all([
+          fetch('/api/board?category=active'),
+          fetch('/api/board?category=done')
+        ])
+        
+        if (!activeResponse.ok || !doneResponse.ok) {
+          throw new Error('API response not ok')
+        }
+        
+        const [activeTasks, doneTasks] = await Promise.all([
+          activeResponse.json(),
+          doneResponse.json()
+        ])
+        
+        console.log(`✅ 活動任務: ${Array.isArray(activeTasks) ? activeTasks.length : 0} 個`)
+        console.log(`✅ 已完成任務: ${Array.isArray(doneTasks) ? doneTasks.length : 0} 個`)
+        
         const allTasks: BoardTask[] = []
         
         // Add active tasks
@@ -373,12 +407,16 @@ export default function Home() {
             status: mapTaskStatus(boardTask.status)
           }))
         
+        console.log(`✅ 最終任務列表: ${recentTasks.length} 個`)
         setTasks(recentTasks)
-      })
-      .catch(() => {
-        // Fallback to empty array on error
+        
+      } catch (error) {
+        console.error('❌ 載入任務失敗:', error)
         setTasks([])
-      })
+      }
+    }
+    
+    loadTasks()
   }, [])
 
   useEffect(() => {

@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
     // Calculate time window
     const windowStart = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString()
 
-    // Get usage data within window from model_usage table
+    // Get usage data within window from model_usage_log table
     const { data: usageData, error: usageError } = await supabase
-      .from('model_usage')
-      .select('model_provider, model_id, tokens_in, tokens_out, cost_usd, created_at, agent_id')
+      .from('model_usage_log')
+      .select('provider, model, input_tokens, output_tokens, cost_estimate, created_at, agent')
       .gte('created_at', windowStart)
 
     if (usageError) {
@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
     const usageByModel: Record<string, { tokens: number; cost: number; count: number; provider: string; model: string }> = {}
     
     for (const row of usageData || []) {
-      const key = `${row.model_provider}/${row.model_id}`
+      const key = `${row.provider}/${row.model}`
       if (!usageByModel[key]) {
-        usageByModel[key] = { tokens: 0, cost: 0, count: 0, provider: row.model_provider, model: row.model_id }
+        usageByModel[key] = { tokens: 0, cost: 0, count: 0, provider: row.provider, model: row.model }
       }
-      usageByModel[key].tokens += (Number(row.tokens_in) || 0) + (Number(row.tokens_out) || 0)
-      usageByModel[key].cost += Number(row.cost_usd) || 0
+      usageByModel[key].tokens += (Number(row.input_tokens) || 0) + (Number(row.output_tokens) || 0)
+      usageByModel[key].cost += Number(row.cost_estimate) || 0
       usageByModel[key].count += 1
     }
 
@@ -60,12 +60,12 @@ export async function GET(request: NextRequest) {
     const usageByAgent: Record<string, { tokens: number; cost: number; count: number }> = {}
     
     for (const row of usageData || []) {
-      const agent = row.agent_id || 'unknown'
+      const agent = row.agent || 'unknown'
       if (!usageByAgent[agent]) {
         usageByAgent[agent] = { tokens: 0, cost: 0, count: 0 }
       }
-      usageByAgent[agent].tokens += (Number(row.tokens_in) || 0) + (Number(row.tokens_out) || 0)
-      usageByAgent[agent].cost += Number(row.cost_usd) || 0
+      usageByAgent[agent].tokens += (Number(row.input_tokens) || 0) + (Number(row.output_tokens) || 0)
+      usageByAgent[agent].cost += Number(row.cost_estimate) || 0
       usageByAgent[agent].count += 1
     }
 
@@ -74,16 +74,16 @@ export async function GET(request: NextRequest) {
       total_tokens: stats.tokens,
       total_cost: stats.cost,
       request_count: stats.count,
-      success_rate: 100, // Assume 100% since we don't have failure data in model_usage
+      success_rate: 100, // Assume 100% since we don't have failure data in model_usage_log
     })).sort((a, b) => b.total_cost - a.total_cost)
 
     // Today's summary
     const todaySummary = {
       total_requests: usageData?.length || 0,
-      total_tokens_in: usageData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0), 0) || 0,
-      total_tokens_out: usageData?.reduce((sum, r) => sum + (Number(r.tokens_out) || 0), 0) || 0,
-      total_tokens: usageData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0) + (Number(r.tokens_out) || 0), 0) || 0,
-      total_cost: usageData?.reduce((sum, r) => sum + (Number(r.cost_usd) || 0), 0) || 0,
+      total_tokens_in: usageData?.reduce((sum, r) => sum + (Number(r.input_tokens) || 0), 0) || 0,
+      total_tokens_out: usageData?.reduce((sum, r) => sum + (Number(r.output_tokens) || 0), 0) || 0,
+      total_tokens: usageData?.reduce((sum, r) => sum + (Number(r.input_tokens) || 0) + (Number(r.output_tokens) || 0), 0) || 0,
+      total_cost: usageData?.reduce((sum, r) => sum + (Number(r.cost_estimate) || 0), 0) || 0,
       success_rate: 100,
     }
 

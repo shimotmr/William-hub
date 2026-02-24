@@ -7,14 +7,16 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 interface UsageRecord {
-  model_provider: string
-  model_id: string
-  agent_id: string
+  provider: string
+  model: string
+  agent: string
   session_key: string
-  tokens_in?: number
-  tokens_out?: number
-  prompt_count?: number
-  cost_usd?: number
+  input_tokens?: number
+  output_tokens?: number
+  cost_estimate?: number
+  latency_ms?: number
+  success?: boolean
+  error_message?: string
   metadata?: Record<string, unknown>
 }
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
     const body: UsageRecord = await request.json()
 
     // Validate required fields
-    const requiredFields = ['model_provider', 'model_id', 'agent_id', 'session_key'] as const
+    const requiredFields = ['provider', 'model', 'agent', 'session_key'] as const
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json(
@@ -34,21 +36,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare record
+    const input_tokens = body.input_tokens || 0
+    const output_tokens = body.output_tokens || 0
     const record = {
-      model_provider: body.model_provider,
-      model_id: body.model_id,
-      agent_id: body.agent_id,
+      provider: body.provider,
+      model: body.model,
+      agent: body.agent,
       session_key: body.session_key,
-      tokens_in: body.tokens_in || 0,
-      tokens_out: body.tokens_out || 0,
-      prompt_count: body.prompt_count || 1,
-      cost_usd: body.cost_usd || 0,
+      input_tokens,
+      output_tokens,
+      total_tokens: input_tokens + output_tokens,
+      cost_estimate: body.cost_estimate || null,
+      latency_ms: body.latency_ms || null,
+      success: body.success !== undefined ? body.success : true,
+      error_message: body.error_message || null,
       created_at: new Date().toISOString(),
     }
 
     // Insert into database
     const { data, error } = await supabase
-      .from('model_usage')
+      .from('model_usage_log')
       .insert(record)
       .select('id, created_at')
       .single()
@@ -94,16 +101,16 @@ export async function GET(request: NextRequest) {
     
     // Build query
     let query = supabase
-      .from('model_usage')
+      .from('model_usage_log')
       .select('*', { count: 'exact' })
     
     // Apply filters
     if (modelProvider && modelProvider !== '') {
-      query = query.eq('model_provider', modelProvider)
+      query = query.eq('provider', modelProvider)
     }
     
     if (agentId && agentId !== '') {
-      query = query.eq('agent_id', agentId)
+      query = query.eq('agent', agentId)
     }
     
     if (startDate && startDate !== '') {
@@ -135,14 +142,14 @@ export async function GET(request: NextRequest) {
     
     // Get summary stats
     let summaryQuery = supabase
-      .from('model_usage')
-      .select('prompt_count, tokens_in, tokens_out, cost_usd', { count: 'exact' })
+      .from('model_usage_log')
+      .select('input_tokens, output_tokens, total_tokens, cost_estimate', { count: 'exact' })
     
     if (modelProvider && modelProvider !== '') {
-      summaryQuery = summaryQuery.eq('model_provider', modelProvider)
+      summaryQuery = summaryQuery.eq('provider', modelProvider)
     }
     if (agentId && agentId !== '') {
-      summaryQuery = summaryQuery.eq('agent_id', agentId)
+      summaryQuery = summaryQuery.eq('agent', agentId)
     }
     if (startDate && startDate !== '') {
       summaryQuery = summaryQuery.gte('created_at', startDate)
@@ -155,24 +162,24 @@ export async function GET(request: NextRequest) {
     
     const { data: summaryData } = await summaryQuery
     
-    const totalPrompts = summaryData?.reduce((sum, r) => sum + (Number(r.prompt_count) || 0), 0) || 0
-    const totalTokensIn = summaryData?.reduce((sum, r) => sum + (Number(r.tokens_in) || 0), 0) || 0
-    const totalTokensOut = summaryData?.reduce((sum, r) => sum + (Number(r.tokens_out) || 0), 0) || 0
-    const totalCost = summaryData?.reduce((sum, r) => sum + (Number(r.cost_usd) || 0), 0) || 0
+    const totalRequests = summaryData?.length || 0
+    const totalTokensIn = summaryData?.reduce((sum, r) => sum + (Number(r.input_tokens) || 0), 0) || 0
+    const totalTokensOut = summaryData?.reduce((sum, r) => sum + (Number(r.output_tokens) || 0), 0) || 0
+    const totalCost = summaryData?.reduce((sum, r) => sum + (Number(r.cost_estimate) || 0), 0) || 0
     
     // Get unique values for filters
     const { data: modelProviders } = await supabase
-      .from('model_usage')
-      .select('model_provider')
-      .order('model_provider')
+      .from('model_usage_log')
+      .select('provider')
+      .order('provider')
     
     const { data: agentIds } = await supabase
-      .from('model_usage')
-      .select('agent_id')
-      .order('agent_id')
+      .from('model_usage_log')
+      .select('agent')
+      .order('agent')
     
-    const uniqueProviders = Array.from(new Set(modelProviders?.map(r => r.model_provider) || []))
-    const uniqueAgents = Array.from(new Set(agentIds?.map(r => r.agent_id) || []))
+    const uniqueProviders = Array.from(new Set(modelProviders?.map(r => r.provider) || []))
+    const uniqueAgents = Array.from(new Set(agentIds?.map(r => r.agent) || []))
     
     return NextResponse.json({
       status: 'success',
@@ -185,7 +192,7 @@ export async function GET(request: NextRequest) {
           total_pages: Math.ceil((count || 0) / limit)
         },
         summary: {
-          total_prompts: totalPrompts,
+          total_requests: totalRequests,
           total_tokens_in: totalTokensIn,
           total_tokens_out: totalTokensOut,
           total_tokens: totalTokensIn + totalTokensOut,

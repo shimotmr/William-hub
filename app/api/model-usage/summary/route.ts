@@ -19,11 +19,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: quotasError.message }, { status: 500 })
     }
 
-    // Fetch current usage directly from model_usage table (last 5 hours)
+    // Fetch current usage directly from model_usage_log table (last 5 hours)
     const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
     const { data: usageRaw, error: usageError } = await supabase
-      .from('model_usage')
-      .select('model_provider, model_id, tokens_in, tokens_out, prompt_count')
+      .from('model_usage_log')
+      .select('provider, model, input_tokens, output_tokens, total_tokens')
       .gte('created_at', fiveHoursAgo)
 
     if (usageError) {
@@ -31,16 +31,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Aggregate usage by model
-    const usageByModel: Record<string, { totalTokensIn: number; totalTokensOut: number; totalPrompts: number }> = {}
+    const usageByModel: Record<string, { totalTokensIn: number; totalTokensOut: number; totalRequests: number }> = {}
     
     for (const u of usageRaw || []) {
-      const key = `${u.model_provider}:${u.model_id}`
+      const key = `${u.provider}:${u.model}`
       if (!usageByModel[key]) {
-        usageByModel[key] = { totalTokensIn: 0, totalTokensOut: 0, totalPrompts: 0 }
+        usageByModel[key] = { totalTokensIn: 0, totalTokensOut: 0, totalRequests: 0 }
       }
-      usageByModel[key].totalTokensIn += Number(u.tokens_in) || 0
-      usageByModel[key].totalTokensOut += Number(u.tokens_out) || 0
-      usageByModel[key].totalPrompts += Number(u.prompt_count) || 0
+      usageByModel[key].totalTokensIn += Number(u.input_tokens) || 0
+      usageByModel[key].totalTokensOut += Number(u.output_tokens) || 0
+      usageByModel[key].totalRequests += 1
     }
 
     // Group quotas by model
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     for (const q of quotas || []) {
       const key = `${q.model_provider}:${q.model_id}`
       const usageData = usageByModel[key]
-      const currentUsage = usageData ? usageData.totalPrompts : 0
+      const currentUsage = usageData ? usageData.totalRequests : 0
       const quotaLimit = Number(q.quota_limit)
       const usagePercentage = quotaLimit > 0 ? (currentUsage / quotaLimit) * 100 : 0
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         status = 'yellow'
       }
 
-      // Use prompts for quota limit comparison
+      // Use requests for quota limit comparison
       models.push({
         model_provider: q.model_provider,
         model_id: q.model_id,
