@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
+import { BackButton } from '../components/BackButton';
+
 interface Alert {
   id: string;
   alert_type: string;
@@ -85,6 +87,7 @@ export default function AlertsPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-6xl mx-auto">
+        <BackButton />
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

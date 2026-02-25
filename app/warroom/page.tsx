@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import { 
   Cpu, Activity, Bell, Users, Clock, AlertTriangle, 
   CheckCircle2, RefreshCw, Wifi, WifiOff, ChevronRight,
   Terminal, Zap, Shield
 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+
+import { BackButton } from '../components/BackButton'
 import SystemMonitor from '../components/SystemMonitor'
 
 // ============= Types =============
@@ -323,6 +325,7 @@ export default function WarRoomPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>

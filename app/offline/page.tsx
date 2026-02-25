@@ -1,4 +1,7 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
+
+import { BackButton } from '../components/BackButton'
 
 export const metadata: Metadata = {
   title: '離線模式 - William Hub',
@@ -30,12 +33,14 @@ export default function OfflinePage() {
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           您目前處於離線狀態。部分功能可能無法使用，請確認您的網路連線後再試一次。
         </p>
-        <a
-          href="/"
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          重新載入頁面
-        </a>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/"
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            返回首頁
+          </Link>
+        </div>
       </div>
     </div>
   )
