@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
+import { createServiceRoleClient } from '@/lib/supabase-server'
 
 interface MessageCreateRequest {
   thread_id: string
@@ -23,32 +22,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 嘗試從 Supabase 獲取訊息
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/agent_messages?thread_id=eq.${threadId}&order=timestamp.asc`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        next: { revalidate: 10 },
-      }
-    )
+    const supabase = createServiceRoleClient()
+    
+    const { data, error } = await supabase
+      .from('agent_messages')
+      .select('*')
+      .eq('thread_id', threadId)
+      .order('timestamp', { ascending: true })
 
-    if (response.ok) {
-      const messages = await response.json()
-      return NextResponse.json(messages)
+    if (error) {
+      console.error('Supabase error:', error)
+      // If table doesn't exist, return mock data
+      const mockMessages = getMockMessages(threadId)
+      return NextResponse.json(mockMessages)
     }
 
-    // 如果表格不存在，返回 mock 數據
-    const mockMessages = getMockMessages(threadId)
-    return NextResponse.json(mockMessages)
+    return NextResponse.json(data || [])
   } catch (error) {
     console.error('Error fetching messages:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch messages' }, 
-      { status: 500 }
-    )
+    // Return mock data on error
+    const mockMessages = getMockMessages(threadId)
+    return NextResponse.json(mockMessages)
   }
 }
 
@@ -76,46 +70,30 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // 嘗試插入到 Supabase
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/agent_messages`,
-        {
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify(messageData)
-        }
-      )
+      const supabase = createServiceRoleClient()
+      
+      const { data, error } = await supabase
+        .from('agent_messages')
+        .insert(messageData)
+        .select()
+        .single()
 
-      if (response.ok) {
-        const createdMessage = await response.json()
-        
-        // 同時更新討論串的 updated_at
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/agent_threads?id=eq.${body.thread_id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ updated_at: new Date().toISOString() })
-          }
-        )
-        
-        return NextResponse.json(createdMessage[0] || messageData)
-      } else {
-        // 如果 Supabase 失敗，返回模擬成功
+      if (error) {
+        console.error('Supabase insert error:', error)
+        // Return mock success on error
         return NextResponse.json({
           ...messageData,
           id: `mock-${Date.now()}`
         })
       }
+
+      // Update thread's updated_at
+      await supabase
+        .from('agent_threads')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', body.thread_id)
+      
+      return NextResponse.json(data || messageData)
     } catch (supabaseError) {
       console.error('Supabase error:', supabaseError)
       // 返回模擬成功

@@ -1,10 +1,14 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
+import { config } from './config'
+
+// Existing client for authenticated requests (uses anon key with cookies)
 export async function createClient() {
   const cookieStore = await cookies()
 
-  return createServerClient(
+  return createSupabaseServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -24,4 +28,14 @@ export async function createClient() {
       },
     }
   )
+}
+
+// Service role client for server-side operations (bypasses RLS)
+export const createServiceRoleClient = () => {
+  return createSupabaseClient(config.supabase.url, config.supabase.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
 }

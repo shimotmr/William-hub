@@ -1,59 +1,54 @@
 import { NextResponse } from 'next/server'
 
-const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
+import { createServiceRoleClient } from '@/lib/supabase-server'
 
 // GET: 取得所有任務
 export async function GET(request: Request) {
   try {
+    const supabase = createServiceRoleClient()
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') || 'active'
     
-    let filter: string
+    let query = supabase.from('board_tasks').select('*')
     
     switch (category) {
       case 'active':
         // 待辦：真正在做或等著做的
-        filter = 'status=in.(待執行,執行中)&order=created_at.asc'
+        query = query.in('status', ['待執行', '執行']).order('created_at', { ascending: true })
         break
       case 'planned':
         // 規劃中：有想法但還沒排進來
-        filter = 'status=in.(待規劃,中期目標)&order=created_at.asc'
+        query = query.in('status', ['待規劃', '中期目標']).order('created_at', { ascending: true })
         break
       case 'backlog':
         // 長期：遠期願景
-        filter = 'status=eq.長期目標&order=created_at.asc'
+        query = query.eq('status', '長期目標').order('created_at', { ascending: true })
         break
       case 'recurring':
         // 週期性：所有有週期設定的任務
-        filter = 'recurrence_type=not.eq.none&recurrence_type=not.is.null&order=next_run_at.asc'
+        query = query.not('recurrence_type', 'eq', 'none').not('recurrence_type', 'is', 'null').order('next_run_at', { ascending: true })
         break
       case 'done':
         // 已完成：歷史記錄
-        filter = 'status=in.(已完成,已關閉)&order=completed_at.desc'
+        query = query.in('status', ['已完成', '已關閉']).order('completed_at', { ascending: false })
         break
       case 'history':
         // 保持向後相容性
-        filter = 'status=in.(已完成,已關閉)&order=completed_at.desc'
+        query = query.in('status', ['已完成', '已關閉']).order('completed_at', { ascending: false })
         break
       default:
         // 預設顯示待辦
-        filter = 'status=in.(待執行,執行中)&order=created_at.asc'
+        query = query.in('status', ['待執行', '執行']).order('created_at', { ascending: true })
     }
     
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?${filter}`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    })
+    const { data, error } = await query
     
-    if (!res.ok) {
+    if (error) {
+      console.error('Supabase error:', error)
       return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
     }
     
-    const data = await res.json()
-    return NextResponse.json(data)
+    return NextResponse.json(data || [])
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -63,23 +58,19 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const supabase = createServiceRoleClient()
     
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify(body),
-    })
+    const { data, error } = await supabase
+      .from('board_tasks')
+      .insert(body)
+      .select()
+      .single()
     
-    if (!res.ok) {
+    if (error) {
+      console.error('Supabase error:', error)
       return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
     }
     
-    const data = await res.json()
     return NextResponse.json(data)
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -96,22 +87,20 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Missing task id' }, { status: 400 })
     }
     
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }),
-    })
+    const supabase = createServiceRoleClient()
     
-    if (!res.ok) {
+    const { data, error } = await supabase
+      .from('board_tasks')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Supabase error:', error)
       return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
     }
     
-    const data = await res.json()
     return NextResponse.json(data)
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -128,15 +117,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Missing task id' }, { status: 400 })
     }
     
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/board_tasks?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    })
+    const supabase = createServiceRoleClient()
     
-    if (!res.ok) {
+    const { error } = await supabase
+      .from('board_tasks')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Supabase error:', error)
       return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
     }
     
