@@ -1,17 +1,17 @@
 'use client'
 
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler } from 'chart.js'
 import { Target, Code, Palette, Search, BookOpen, PenTool, BarChart3, Mail, Bot, ClipboardList, Zap, CheckCircle, TrendingUp, Users, PieChart, Clock, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { Doughnut } from 'react-chartjs-2'
+import { Line, Doughnut } from 'react-chartjs-2'
 
 import AgentRanking from '@/app/components/AgentRanking'
 import ModelQuotaOverview from '@/app/components/ModelQuotaOverview'
 import ModelTrendChart from '@/app/components/ModelTrendChart'
 import SystemMonitor from '@/app/components/SystemMonitor'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler)
 
 type AgentData = {
   name: string
@@ -31,6 +31,20 @@ type RecentTask = {
   assignee: string
 }
 
+type RunningTask = {
+  id: number
+  title: string
+  assignee: string
+  updatedAt: string
+  description: string | null
+}
+
+type TokenTrendPoint = {
+  date: string
+  tokens: number
+  cost: number
+}
+
 type DashboardData = {
   statusCounts: Record<string, number>
   totalTasks: number
@@ -38,6 +52,8 @@ type DashboardData = {
   completionRate: number
   agents: AgentData[]
   recentCompleted: RecentTask[]
+  runningTasks: RunningTask[]
+  tokenTrend: TokenTrendPoint[]
 }
 
 // Dynamic color generation for agents
@@ -308,6 +324,116 @@ export default function DashboardPage() {
                 })}
               </div>
             </section>
+
+            {/* Running Tasks Section */}
+            {data.runningTasks && data.runningTasks.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-sm font-semibold text-foreground-muted uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Zap size={14} className="text-yellow-400" /> 當前任務進度
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.runningTasks.map(task => {
+                    const color = getAgentColor(task.assignee)
+                    return (
+                      <div
+                        key={task.id}
+                        className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 backdrop-blur-sm p-4 hover:border-yellow-500/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                            <span className="text-xs text-yellow-400 font-medium">執行中</span>
+                          </div>
+                          <span className="text-[10px] text-foreground-subtle">#{task.id}</span>
+                        </div>
+                        <h3 className="text-sm font-medium text-foreground mb-2 line-clamp-2">{task.title}</h3>
+                        <div className="flex items-center justify-between">
+                          <span 
+                            className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ color, background: `${color}15` }}
+                          >
+                            {task.assignee}
+                          </span>
+                          <span className="text-[10px] text-foreground-subtle">
+                            {timeAgo(task.updatedAt)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Token Trend Section */}
+            {data.tokenTrend && data.tokenTrend.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-sm font-semibold text-foreground-muted uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <TrendingUp size={14} /> Token 消耗趨勢（近 7 天）
+                </h2>
+                <div className="rounded-xl border border-border bg-card backdrop-blur-sm p-6">
+                  <div className="h-[200px]">
+                    <Line data={{
+                      labels: data.tokenTrend.map(d => d.date.slice(5)),
+                      datasets: [
+                        {
+                          label: 'Tokens',
+                          data: data.tokenTrend.map(d => d.tokens),
+                          borderColor: '#8b5cf6',
+                          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                        },
+                        {
+                          label: 'Cost ($)',
+                          data: data.tokenTrend.map(d => d.cost * 1000),
+                          borderColor: '#10b981',
+                          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          yAxisID: 'y1',
+                        },
+                      ],
+                    }} options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: { mode: 'index', intersect: false },
+                      scales: {
+                        x: {
+                          grid: { color: '#334155' },
+                          ticks: { color: '#94a3b8' },
+                        },
+                        y: {
+                          grid: { color: '#334155' },
+                          ticks: { color: '#94a3b8', callback: (v) => Number(v).toLocaleString() },
+                          position: 'left',
+                        },
+                        y1: {
+                          grid: { display: false },
+                          ticks: { color: '#10b981', callback: (v) => '$' + Number(v).toFixed(2) },
+                          position: 'right',
+                        },
+                      },
+                      plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                      },
+                    }} />
+                  </div>
+                  <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-border">
+                    {data.tokenTrend.slice(-7).map((d, i) => (
+                      <div key={i} className="text-center">
+                        <div className="text-lg font-bold text-purple-400">{Math.round(d.tokens / 1000)}K</div>
+                        <div className="text-[10px] text-foreground-muted">{d.date.slice(5)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Chart + Activity Feed */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
