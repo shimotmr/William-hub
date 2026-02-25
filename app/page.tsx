@@ -52,7 +52,18 @@ const taskStatusColors = {
   'planned': { dot: 'bg-gray-500', text: 'text-gray-500', label: '待排' },
 }
 
-const apps = [
+interface AppItem {
+  name: string;
+  desc: string;
+  url: string;
+  tag: string;
+  accent: string;
+  accentBg: string;
+  borderColor: string;
+  disabled?: boolean;
+}
+
+const apps: AppItem[] = [
   {
     name: 'Aurotek Portal',
     desc: '通路營業管理系統',
@@ -133,7 +144,6 @@ const apps = [
     accent: '#a855f7',
     accentBg: 'rgba(168,85,247,0.08)',
     borderColor: 'rgba(168,85,247,0.25)',
-    disabled: true,
   },
   {
     name: 'Growth',
