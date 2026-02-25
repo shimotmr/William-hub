@@ -3,11 +3,11 @@ import path from 'path'
 
 import { NextResponse } from 'next/server'
 
+import { createServiceRoleClient } from '@/lib/supabase-server'
+
 export const dynamic = 'force-dynamic'
 
 const PDF_DIR = path.join(process.cwd(), 'public', 'reports', 'pdfs')
-const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
 
 function checkPdfExists(id: string): { exists: boolean; size: number | null; filename: string | null } {
   try {
@@ -37,37 +37,32 @@ export async function GET(
 
   // Fetch report from Supabase
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/reports?id=eq.${id}&select=id,title,author,type,md_content,date&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }
-    )
+    const supabase = createServiceRoleClient()
 
-    if (res.ok) {
-      const data = await res.json()
-      if (data && data.length > 0) {
-        const report = data[0]
-        return NextResponse.json({
-          id: report.id,
-          title: report.title,
-          date: report.date,
-          author: report.author,
-          type: report.type || 'md',
-          md_content: report.md_content,
-          content: report.md_content,
-          doc_url: null,
-          pdf_url: pdf.exists ? `/api/reports/${id}/pdf` : null,
-          pdf_exists: pdf.exists,
-          pdf_size: pdf.size,
-          pdf_filename: pdf.filename,
-          export_status: null,
-          source: 'supabase',
-        })
-      }
+    const { data, error } = await supabase
+      .from('reports')
+      .select('id,title,author,type,md_content,date')
+      .eq('id', parseInt(id))
+      .limit(1)
+
+    if (!error && data && data.length > 0) {
+      const report = data[0]
+      return NextResponse.json({
+        id: report.id,
+        title: report.title,
+        date: report.date,
+        author: report.author,
+        type: report.type || 'md',
+        md_content: report.md_content,
+        content: report.md_content,
+        doc_url: null,
+        pdf_url: pdf.exists ? `/api/reports/${id}/pdf` : null,
+        pdf_exists: pdf.exists,
+        pdf_size: pdf.size,
+        pdf_filename: pdf.filename,
+        export_status: null,
+        source: 'supabase',
+      })
     }
   } catch (err) {
     console.error('Supabase fetch error:', err)

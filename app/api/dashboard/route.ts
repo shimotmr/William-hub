@@ -1,44 +1,29 @@
 import { NextResponse } from 'next/server'
 
-const SUPABASE_URL = 'https://eznawjbgzmcnkxcisrjj.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6bmF3amJnem1jbmt4Y2lzcmpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNTkxMTUsImV4cCI6MjA4NTczNTExNX0.KrZbgeF5z76BTjOPvBTxRkuEt_OqpmgsqMAd60wA1J0'
-
-// Agent roles will be fetched dynamically from agents table
+import { createServiceRoleClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
+    const supabase = createServiceRoleClient()
+
     // Fetch agents, tasks, and token usage in parallel
     const [agentsRes, allTasksRes, tokenRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/agents?order=created_at.asc`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }),
-      fetch(`${SUPABASE_URL}/rest/v1/board_tasks?select=*&order=created_at.desc`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }),
+      supabase.from('agents').select('*').order('created_at', { ascending: true }),
+      supabase.from('board_tasks').select('*').order('created_at', { ascending: false }),
       // Fetch last 7 days token usage
-      fetch(`${SUPABASE_URL}/rest/v1/model_usage_log?select=created_at,input_tokens,output_tokens,cost_estimate&order=created_at.desc&limit=5000`, {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }),
+      supabase.from('model_usage_log').select('created_at,input_tokens,output_tokens,cost_estimate').order('created_at', { ascending: false }).limit(5000),
     ])
 
-    if (!agentsRes.ok || !allTasksRes.ok || !tokenRes.ok) {
+    if (agentsRes.error || allTasksRes.error || tokenRes.error) {
+      console.error('Supabase errors:', agentsRes.error, allTasksRes.error, tokenRes.error)
       return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
     }
 
-    const agents = await agentsRes.json()
-    const allTasks = await allTasksRes.json()
-    const tokenData = await tokenRes.json()
+    const agents = agentsRes.data
+    const allTasks = allTasksRes.data
+    const tokenData = tokenRes.data
 
     // Status distribution
     const statusCounts: Record<string, number> = { '待執行': 0, '執行中': 0, '已完成': 0 }
