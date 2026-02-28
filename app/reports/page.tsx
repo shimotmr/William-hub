@@ -91,9 +91,15 @@ export default function ReportsPage() {
       .then((data) => {
         if (Array.isArray(data)) {
           setReports(data)
+        } else {
+          console.error('Reports API did not return array:', data)
+          setReports([])
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('Reports fetch error:', err)
+        setReports([])
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -172,7 +178,7 @@ export default function ReportsPage() {
 
           {/* Report count */}
           <div className="text-xs text-foreground-muted">
-            共 {filtered.length} 份報告{filter !== 'all' || searchQuery ? `（已篩選）` : ''}
+            共 {loading ? '...' : filtered.length} 份報告{filter !== 'all' || searchQuery ? `（已篩選）` : ''}
           </div>
         </div>
       </div>
