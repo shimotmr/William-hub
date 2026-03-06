@@ -181,6 +181,33 @@ const apps: AppItem[] = [
     accentBg: 'rgba(168,85,247,0.08)',
     borderColor: 'rgba(168,85,247,0.25)',
   },
+  {
+    name: 'Schedules',
+    desc: '排程矩陣管理 / 月週日視圖 / 衝突偵測',
+    url: '/schedules',
+    tag: 'LIVE',
+    accent: '#0ea5e9',
+    accentBg: 'rgba(14,165,233,0.08)',
+    borderColor: 'rgba(14,165,233,0.25)',
+  },
+  {
+    name: 'Approvals',
+    desc: '權限審批中心 / 一鍵批准拒絕',
+    url: '/approvals',
+    tag: 'LIVE',
+    accent: '#d946ef',
+    accentBg: 'rgba(217,70,239,0.08)',
+    borderColor: 'rgba(217,70,239,0.25)',
+  },
+  {
+    name: 'DB Explorer',
+    desc: '資料庫結構瀏覽 / 快速查詢 / 匯出',
+    url: '/db-explorer',
+    tag: 'LIVE',
+    accent: '#84cc16',
+    accentBg: 'rgba(132,204,22,0.08)',
+    borderColor: 'rgba(132,204,22,0.25)',
+  },
 ]
 
 // --- SVG Icons (stroke-based, unified style) ---
@@ -316,6 +343,38 @@ function IconGamification({ color }: { color: string }) {
   )
 }
 
+function IconSchedules({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="10" y1="14" x2="14" y2="14" />
+      <line x1="10" y1="18" x2="14" y2="18" />
+    </svg>
+  )
+}
+
+function IconApprovals({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  )
+}
+
+function IconDBExplorer({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    </svg>
+  )
+}
+
 const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Dashboard': IconDashboard,
   'Aurotek Portal': IconAurotek,
@@ -328,6 +387,9 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'Rules Dashboard': IconRules,
   'RAG Testing': IconRAG,
   'Gamification': IconGamification,
+  'Schedules': IconSchedules,
+  'Approvals': IconApprovals,
+  'DB Explorer': IconDBExplorer,
 }
 
 // --- Helpers ---
