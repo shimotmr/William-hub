@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
     const { data: conversations } = await convQuery
 
     // Transform conversations
-    const convList = (conversations || []).map((c: any) => ({
+    const convList: any[] = (conversations || []).map((c: any) => ({
       external_userid: c.external_userid,
       open_kfid: c.open_kfid,
       display_name: c.display_name,
       company_id: c.company_id,
       company_name: c.wecom_companies?.name || '未分類',
-      last_send_time: null,
+      last_send_time: null as number | null,
       msg_count: 0
     }))
 
