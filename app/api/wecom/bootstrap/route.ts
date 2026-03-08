@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         
         conv.msg_count = msgs?.length || 0
         if (msgs && msgs.length > 0) {
-          conv.last_send_time = Math.max(...msgs.map((m: any) => m.send_time || 0))
+          conv.last_send_time = Math.max(...msgs.map((m: any) => m.send_time || 0)) || null
         }
       }
     }

@@ -1,4 +1,4 @@
--- WeCom Classifier Tables
+-- WeCom Classifier Tables (Safe Migration)
 -- Migration: 003_create_wecom_tables.sql
 
 -- Companies table
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS wecom_companies (
 CREATE TABLE IF NOT EXISTS wecom_conversations (
   external_userid TEXT PRIMARY KEY,
   open_kfid TEXT,
-  company_id INTEGER REFERENCES wecom_companies(id) ON DELETE SET NULL,
+  company_id INTEGER,
   display_name TEXT,
   created_at TEXT NOT NULL DEFAULT NOW(),
   updated_at TEXT NOT NULL DEFAULT NOW()
@@ -57,46 +57,17 @@ ALTER TABLE wecom_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wecom_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wecom_notes ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for wecom_companies
-DROP POLICY IF EXISTS "Allow authenticated users to select wecom_companies" ON wecom_companies;
-CREATE POLICY "Allow authenticated users to select wecom_companies" ON wecom_companies
-  FOR SELECT USING (true);
+-- RLS Policies
+CREATE POLICY "wecom_companies_select" ON wecom_companies FOR SELECT USING (true);
+CREATE POLICY "wecom_companies_insert" ON wecom_companies FOR INSERT WITH CHECK (true);
+CREATE POLICY "wecom_companies_update" ON wecom_companies FOR UPDATE USING (true);
 
-DROP POLICY IF EXISTS "Allow authenticated users to insert wecom_companies" ON wecom_companies;
-CREATE POLICY "Allow authenticated users to insert wecom_companies" ON wecom_companies
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "wecom_conversations_select" ON wecom_conversations FOR SELECT USING (true);
+CREATE POLICY "wecom_conversations_insert" ON wecom_conversations FOR INSERT WITH CHECK (true);
+CREATE POLICY "wecom_conversations_update" ON wecom_conversations FOR UPDATE USING (true);
 
-DROP POLICY IF EXISTS "Allow authenticated users to update wecom_companies" ON wecom_companies;
-CREATE POLICY "Allow authenticated users to update wecom_companies" ON wecom_companies
-  FOR UPDATE USING (true);
+CREATE POLICY "wecom_messages_select" ON wecom_messages FOR SELECT USING (true);
+CREATE POLICY "wecom_messages_insert" ON wecom_messages FOR INSERT WITH CHECK (true);
 
--- RLS Policies for wecom_conversations
-DROP POLICY IF EXISTS "Allow authenticated users to select wecom_conversations" ON wecom_conversations;
-CREATE POLICY "Allow authenticated users to select wecom_conversations" ON wecom_conversations
-  FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Allow authenticated users to insert wecom_conversations" ON wecom_conversations;
-CREATE POLICY "Allow authenticated users to insert wecom_conversations" ON wecom_conversations
-  FOR INSERT WITH CHECK (true);
-
-DROP POLICY IF EXISTS "Allow authenticated users to update wecom_conversations" ON wecom_conversations;
-CREATE POLICY "Allow authenticated users to update wecom_conversations" ON wecom_conversations
-  FOR UPDATE USING (true);
-
--- RLS Policies for wecom_messages
-DROP POLICY IF EXISTS "Allow authenticated users to select wecom_messages" ON wecom_messages;
-CREATE POLICY "Allow authenticated users to select wecom_messages" ON wecom_messages
-  FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Allow authenticated users to insert wecom_messages" ON wecom_messages;
-CREATE POLICY "Allow authenticated users to insert wecom_messages" ON wecom_messages
-  FOR INSERT WITH CHECK (true);
-
--- RLS Policies for wecom_notes
-DROP POLICY IF EXISTS "Allow authenticated users to select wecom_notes" ON wecom_notes;
-CREATE POLICY "Allow authenticated users to select wecom_notes" ON wecom_notes
-  FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Allow authenticated users to insert wecom_notes" ON wecom_notes;
-CREATE POLICY "Allow authenticated users to insert wecom_notes" ON wecom_notes
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "wecom_notes_select" ON wecom_notes FOR SELECT USING (true);
+CREATE POLICY "wecom_notes_insert" ON wecom_notes FOR INSERT WITH CHECK (true);
