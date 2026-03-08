@@ -34,6 +34,9 @@ export async function POST(
         .insert({ name: companyName, created_at: nowIso(), updated_at: nowIso() })
         .select('id')
         .single()
+      if (!newCompany) {
+        return NextResponse.json({ error: 'Failed to create company' }, { status: 500 })
+      }
       companyId = newCompany.id
     }
 
