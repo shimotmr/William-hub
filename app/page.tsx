@@ -110,6 +110,15 @@ const apps: AppItem[] = [
     borderColor: 'rgba(16,185,129,0.25)',
   },
   {
+    name: 'WeCom 歸類',
+    desc: '企業微信客服對話歸類系統',
+    url: '/wecom',
+    tag: 'NEW',
+    accent: '#f97316',
+    accentBg: 'rgba(249,115,22,0.08)',
+    borderColor: 'rgba(249,115,22,0.25)',
+  },
+  {
     name: 'Dashboard',
     desc: '任務統計 & Agent 狀態總覽',
     url: '/dashboard',
