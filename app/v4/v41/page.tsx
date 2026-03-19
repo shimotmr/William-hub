@@ -1,0 +1,28 @@
+'use client'
+
+import { ArrowLeft, Star } from 'lucide-react'
+import Link from 'next/link'
+
+export default function V41Page() {
+  return (
+    <main className="min-h-screen bg-background text-foreground p-8">
+      <div className="max-w-7xl mx-auto">
+        <Link href="/v4" className="inline-flex items-center gap-2 text-sm text-foreground-muted hover:text-foreground mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          返回 V4 系統中心
+        </Link>
+        
+        <h1 className="text-3xl font-bold mb-2">V4.1 架構圖</h1>
+        <p className="text-foreground-muted mb-8">V4.1 版本功能</p>
+
+        <div className="rounded-xl border border-border bg-card p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Star className="w-5 h-5 text-green-400" />
+            <h2 className="text-xl font-semibold">V4.1 新功能</h2>
+          </div>
+          <p className="text-foreground-muted">V4.1 版本內容待補充...</p>
+        </div>
+      </div>
+    </main>
+  )
+}
