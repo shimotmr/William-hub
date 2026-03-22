@@ -209,6 +209,15 @@ const apps: AppItem[] = [
     borderColor: 'rgba(236,72,153,0.25)',
   },
   {
+    name: 'V4.5工作流',
+    desc: '智能任務分解器 · 三層架構',
+    url: '/v4/v45',
+    tag: 'NEW',
+    accent: '#7B68EE',
+    accentBg: 'rgba(123,104,238,0.08)',
+    borderColor: 'rgba(123,104,238,0.25)',
+  },
+  {
     name: 'Growth',
     desc: '系統與團隊成長趨勢分析',
     url: '/growth',
@@ -452,6 +461,7 @@ const iconMap: Record<string, React.FC<{ color: string }>> = {
   'V4.1架構圖': IconDashboard,
   'V4.2架構圖': IconDashboard,
   'V4.3架構圖': IconDashboard,
+  'V4.5工作流': IconDashboard,
   'Growth': IconGrowth,
   'Rules Dashboard': IconRules,
   'RAG Testing': IconRAG,
