@@ -47,8 +47,12 @@ function isPublicRoute(pathname: string): boolean {
     return true
   }
 
-  // V4 系統頁面（包含 /v4, /v4/architecture, /v4-*, 等）
-  if (pathname.startsWith('/v4')) {
+  // V4 系統頁面 - 明確檢查多種格式
+  if (
+    pathname === '/v4' ||
+    pathname.startsWith('/v4/') ||
+    pathname.startsWith('/v4-')
+  ) {
     return true
   }
 
