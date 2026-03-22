@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Test 頁面
-  if (pathname.startsWith('/test')) {
+  if (pathname.startsWith('/test') || pathname.startsWith('/test-direct')) {
     return NextResponse.next()
   }
 
