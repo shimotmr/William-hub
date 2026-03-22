@@ -105,7 +105,7 @@ export default function V45Page() {
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div className="bg-background p-2 rounded">🎯 派發策略</div>
                 <div className="bg-background p-2 rounded">🔀 並行執行</div>
-                <div className="background p-2 rounded">📦 結果彙整</div>
+                <div className="bg-background p-2 rounded">📦 結果彙整</div>
               </div>
             </div>
 
