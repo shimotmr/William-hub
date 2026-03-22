@@ -74,9 +74,10 @@ function isPublicRoute(pathname) {
   return false
 }
 
-// 設定 middleware 匹配的路徑
+// 設定 middleware 匹配的路徑 - 明確包含 /v4
 export const config = {
   matcher: [
+    '/v4/:path*',
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
