@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server'
 
 /**
  * Middleware: 路由保護與認證檢查
- * 
- * This middleware runs on Vercel Edge Network
  */
 export function middleware(request) {
   const { pathname } = request.nextUrl
 
-  // V4 系統頁面 - 直接允許不需要認證
-  if (pathname.startsWith('/v4') || pathname.startsWith('/test')) {
+  // V4 系統頁面 - 優先檢查
+  if (pathname.startsWith('/v4')) {
+    return NextResponse.next()
+  }
+
+  // Test 頁面
+  if (pathname.startsWith('/test')) {
     return NextResponse.next()
   }
 
@@ -50,9 +53,7 @@ export function middleware(request) {
   return NextResponse.next()
 }
 
-// 設定 middleware 匹配的路徑
+// 設定 middleware 匹配所有路徑
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: '/:path*',
 }
