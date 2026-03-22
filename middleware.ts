@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 /**
  * Middleware: 路由保護與認證檢查
  */
-export function middleware(request) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // V4 系統頁面 - 優先檢查
