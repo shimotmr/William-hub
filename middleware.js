@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
 
 /**
  * Middleware: 路由保護與認證檢查
@@ -10,7 +9,7 @@ import type { NextRequest } from 'next/server'
  * - V4系統頁面 (/v4*)
  * - 公開API (/api/public/*)
  */
-export function middleware(request: NextRequest) {
+export function middleware(request) {
   const { pathname } = request.nextUrl
 
   // 檢查是否為公開路由
@@ -36,7 +35,7 @@ export function middleware(request: NextRequest) {
 /**
  * 判斷是否為公開路由
  */
-function isPublicRoute(pathname: string): boolean {
+function isPublicRoute(pathname) {
   // 登入頁面
   if (pathname === '/login') {
     return true
@@ -61,7 +60,7 @@ function isPublicRoute(pathname: string): boolean {
     return true
   }
 
-  // 靜態資源（Next.js 自動處理，但明確列出以防萬一）
+  // 靜態資源
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/static/') ||
@@ -76,12 +75,8 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 // 設定 middleware 匹配的路徑
-// 明確包含 /v4* 公開路徑
 export const config = {
   matcher: [
-    /*
-     * 匹配所有請求路徑，除了靜態資源
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
