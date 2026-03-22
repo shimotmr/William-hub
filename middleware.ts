@@ -72,15 +72,11 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 // 設定 middleware 匹配的路徑
-// 排除靜態資源和 API 路由中的公開路徑
+// 明確包含 /v4* 公開路徑
 export const config = {
   matcher: [
     /*
-     * 匹配所有請求路徑，除了：
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * 匹配所有請求路徑，除了靜態資源
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
