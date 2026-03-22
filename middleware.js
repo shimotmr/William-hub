@@ -2,18 +2,28 @@ import { NextResponse } from 'next/server'
 
 /**
  * Middleware: 路由保護與認證檢查
- * 
- * 公開路由：
- * - 登入頁面 (/login)
- * - 靜態HTML檔案 (*.html)
- * - V4系統頁面 (/v4*)
- * - 公開API (/api/public/*)
  */
 export function middleware(request) {
   const { pathname } = request.nextUrl
 
-  // 檢查是否為公開路由
-  if (isPublicRoute(pathname)) {
+  // 直接在這裡檢查，不要呼叫函數
+  if (pathname === '/login') {
+    return NextResponse.next()
+  }
+  
+  if (pathname.endsWith('.html')) {
+    return NextResponse.next()
+  }
+  
+  if (pathname.startsWith('/v4')) {
+    return NextResponse.next()
+  }
+  
+  if (pathname.startsWith('/api/public/')) {
+    return NextResponse.next()
+  }
+  
+  if (pathname.startsWith('/_next/')) {
     return NextResponse.next()
   }
 
@@ -21,63 +31,18 @@ export function middleware(request) {
   const session = request.cookies.get('session')
   
   if (!session) {
-    // 未登入，重導向到登入頁
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('from', pathname)
     return NextResponse.redirect(url)
   }
 
-  // 已登入，允許訪問
   return NextResponse.next()
 }
 
-/**
- * 判斷是否為公開路由
- */
-function isPublicRoute(pathname) {
-  // 登入頁面
-  if (pathname === '/login') {
-    return true
-  }
-
-  // 靜態 HTML 檔案
-  if (pathname.endsWith('.html')) {
-    return true
-  }
-
-  // V4 系統頁面 - 明確檢查多種格式
-  if (
-    pathname === '/v4' ||
-    pathname.startsWith('/v4/') ||
-    pathname.startsWith('/v4-')
-  ) {
-    return true
-  }
-
-  // 公開 API 路由
-  if (pathname.startsWith('/api/public/')) {
-    return true
-  }
-
-  // 靜態資源
-  if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/static/') ||
-    pathname.startsWith('/public/') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/manifest.json'
-  ) {
-    return true
-  }
-
-  return false
-}
-
-// 設定 middleware 匹配的路徑 - 明確包含 /v4
+// 設定 middleware 匹配的路徑
 export const config = {
   matcher: [
-    '/v4/:path*',
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
