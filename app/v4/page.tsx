@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 interface Task {
   id: number
@@ -56,8 +56,12 @@ export default function V4SystemPage() {
             <div className="text-xs text-orange-400">v4.2 Pipeline</div>
           </Link>
           <Link href="/v4/v43" className="p-4 rounded-lg bg-pink-500/20 border border-pink-500/30 hover:bg-pink-500/30 transition">
-            <div className="font-medium">V4.3架構圖</div>
+            <div className="font-medium">V4.3架構</div>
             <div className="text-xs text-pink-400">v4.3 升級</div>
+          </Link>
+          <Link href="/v4/v45" className="p-4 rounded-lg bg-gradient-to-r from-purple-500/20 to-teal-500/20 border border-purple-500/30 hover:from-purple-500/30 hover:to-teal-500/30 transition">
+            <div className="font-medium">V4.5工作流</div>
+            <div className="text-xs bg-gradient-to-r from-purple-400 to-teal-400 bg-clip-text text-transparent">NEW 工作流進化</div>
           </Link>
         </div>
 

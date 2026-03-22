@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Pipeline } from 'lucide-react'
+import { ArrowLeft, Workflow } from 'lucide-react'
 import Link from 'next/link'
 
 export default function V42Page() {
@@ -17,7 +17,7 @@ export default function V42Page() {
 
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center gap-2 mb-6">
-            <Pipeline className="w-5 h-5 text-orange-400" />
+            <Workflow className="w-5 h-5 text-orange-400" />
             <h2 className="text-xl font-semibold">Pipeline 系統</h2>
           </div>
           <p className="text-foreground-muted">V4.2 Pipeline 功能待補充...</p>
