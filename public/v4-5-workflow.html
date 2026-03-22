@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WilliamSAGI - V4.5 工作流進化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --surface: #0f172a; --border: #334155; --purple: #7B68EE; --teal: #20B2AA; --muted: #94a3b8; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--surface); color: #e2e8f0; }
+        nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+        nav .brand { color: var(--purple); font-weight: 700; font-size: 1.1em; }
+        nav .badge { background: var(--purple); color: #fff; font-size: 0.7em; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+        .hero { text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #7B68EE22, #20B2AA11); border-radius: 16px; margin-bottom: 24px; }
+        .hero h1 { font-size: 2em; font-weight: 700; margin-bottom: 12px; }
+        .layer { padding: 20px; border-radius: 12px; margin-bottom: 16px; }
+        .layer-1 { background: #7B68EE22; border-left: 4px solid var(--purple); }
+        .layer-2 { background: #20B2AA22; border-left: 4px solid var(--teal); }
+        .layer-badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.75em; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    </style>
+</head>
+<body>
+<nav>
+  <span class="brand">WilliamSAGI</span>
+  <span class="badge">V4.5</span>
+</nav>
+<div style="padding: 24px; max-width: 900px; margin: 0 auto;">
+  <div class="hero">
+    <h1>V4.5 工作流進化</h1>
+    <p>三層分離 + 連續推進：討論一件事不需要當下就執行，但討論的過程會被自動記住、分解，最後才執行。</p>
+  </div>
+  <div class="grid">
+    <div style="background: #1e293b; padding: 16px; border-radius: 8px;">
+      <h4 style="color: var(--purple); font-weight: 600; margin-bottom: 8px;">🔗 統一入口</h4>
+      <p style="font-size: 0.85em; color: var(--muted);">不管從哪裡輸入，最後都會進入統一任務堆疊</p>
+    </div>
+    <div style="background: #1e293b; padding: 16px; border-radius: 8px;">
+      <h4 style="color: var(--teal); font-weight: 600; margin-bottom: 8px;">🤖 智能分解</h4>
+      <p style="font-size: 0.85em; color: var(--muted);">複雜任務自動拆解，選擇最適合的模型與工具</p>
+    </div>
+    <div style="background: #1e293b; padding: 16px; border-radius: 8px;">
+      <h4 style="color: #3B82F6; font-weight: 600; margin-bottom: 8px;">⚡ 並行處理</h4>
+      <p style="font-size: 0.85em; color: var(--muted);">多個獨立子任務同時執行，自動彙整結果</p>
+    </div>
+    <div style="background: #1e293b; padding: 16px; border-radius: 8px;">
+      <h4 style="color: #10B981; font-weight: 600; margin-bottom: 8px;">🧠 自我進化</h4>
+      <p style="font-size: 0.85em; color: var(--muted);">失敗經驗自動記住，dispatch_prompt 持續優化</p>
+    </div>
+  </div>
+  <h2 style="margin: 32px 0 16px; font-size: 1.5em;">四層架構</h2>
+  <div class="layer layer-1">
+    <h3 style="color: var(--purple); font-weight: 600;">L1 討論層 (Think)</h3>
+    <p style="color: var(--muted); font-size: 0.9em;">William 任何討論、點子、指令 → 自動存入任務堆疊</p>
+  </div>
+  <div class="layer layer-2">
+    <h3 style="color: var(--teal); font-weight: 600;">L2 任務形成層 (Form)</h3>
+    <p style="color: var(--muted); font-size: 0.9em;">自動分析複雜度 → 拆成子任務 → 選擇最佳模型與工具</p>
+  </div>
+  <div class="layer" style="background: #3B82F622; border-left: 4px solid #3B82F6;">
+    <h3 style="color: #3B82F6; font-weight: 600;">L3 執行調度層 (Execute)</h3>
+    <p style="color: var(--muted); font-size: 0.9em;">自動派給最適 Agent → 並行/串行 → 結果彙整</p>
+  </div>
+  <div class="layer" style="background: #10B98122; border-left: 4px solid #10B981;">
+    <h3 style="color: #10B981; font-weight: 600;">L4 反饋優化層 (Feedback)</h3>
+    <p style="color: var(--muted); font-size: 0.9em;">失敗重試 → 經驗記憶 → dispatch_prompt 優化</p>
+  </div>
+</div>
+</body>
+</html>
