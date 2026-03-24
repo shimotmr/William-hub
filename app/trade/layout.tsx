@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart3, TrendingUp, ShoppingCart, Briefcase, History } from 'lucide-react'
+import { BarChart3, TrendingUp, ShoppingCart, Briefcase, History, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -31,6 +31,12 @@ export default function TradeLayout({
       label: '報價',
       icon: <TrendingUp size={18} />,
       active: pathname === '/trade/quotes'
+    },
+    {
+      href: '/trade/stocks/2330',
+      label: '個股資訊',
+      icon: <FileText size={18} />,
+      active: pathname.startsWith('/trade/stocks')
     },
     {
       href: '/trade/orders',
